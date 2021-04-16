@@ -1,0 +1,189 @@
+{
+  "acl": [
+    "number",
+    "gender",
+    "case",
+    "negation"
+  ],
+  "acl:relcl": [
+    "collectivity",
+    "negation"
+  ],
+  "advcl": [
+    "negation",
+    "agglutination"
+  ],
+  "advcl:cmpr": [
+    "person"
+  ],
+  "amod": [
+    "number",
+    "gender",
+    "case",
+    "fullstoppedness"
+  ],
+  "amod:flat": [
+    "number",
+    "gender",
+    "case",
+    "degree"
+  ],
+  "appos": [
+    "aspect",
+    "collectivity",
+    "negation"
+  ],
+  "aux": [
+    "number",
+    "gender",
+    "aspect"
+  ],
+  "aux:clitic": [
+    "number"
+  ],
+  "aux:pass": [
+    "number",
+    "gender"
+  ],
+  "ccomp": [
+    "negation"
+  ],
+  "ccomp:cleft": [
+    "collectivity"
+  ],
+  "ccomp:obj": [
+    "negation"
+  ],
+  "conj": [
+    "case",
+    "collectivity",
+    "degree",
+    "negation",
+    "agglutination",
+    "accentibility",
+    "prepositionality"
+  ],
+  "cop": [
+    "number"
+  ],
+  "det": [
+    "number",
+    "gender",
+    "case"
+  ],
+  "det:numgov": [
+    "gender",
+    "collectivity"
+  ],
+  "det:nummod": [
+    "number",
+    "gender",
+    "case",
+    "collectivity"
+  ],
+  "det:poss": [
+    "number",
+    "gender",
+    "case",
+    "degree"
+  ],
+  "fixed": [
+    "number",
+    "aspect",
+    "collectivity",
+    "degree",
+    "vocality"
+  ],
+  "flat": [
+    "number",
+    "collectivity",
+    "fullstoppedness"
+  ],
+  "iobj": [
+    "negation"
+  ],
+  "list": [
+    "case"
+  ],
+  "nmod": [
+    "negation"
+  ],
+  "nmod:arg": [
+    "collectivity"
+  ],
+  "nmod:flat": [
+    "collectivity"
+  ],
+  "nmod:pred": [
+    "number",
+    "aspect",
+    "negation"
+  ],
+  "nsubj": [
+    "person",
+    "collectivity",
+    "negation"
+  ],
+  "nsubj:pass": [
+    "number",
+    "gender",
+    "case",
+    "negation"
+  ],
+  "nummod": [
+    "number",
+    "gender",
+    "case",
+    "collectivity"
+  ],
+  "nummod:flat": [
+    "number",
+    "gender",
+    "case"
+  ],
+  "nummod:gov": [
+    "number",
+    "collectivity"
+  ],
+  "obj": [
+    "collectivity",
+    "negation",
+    "fullstoppedness"
+  ],
+  "obl": [
+    "negation"
+  ],
+  "obl:agent": [
+    "collectivity",
+    "negation"
+  ],
+  "obl:arg": [
+    "degree",
+    "negation"
+  ],
+  "obl:cmpr": [
+    "collectivity",
+    "negation"
+  ],
+  "orphan": [
+    "degree",
+    "accentibility"
+  ],
+  "parataxis:insert": [
+    "collectivity",
+    "accomodability"
+  ],
+  "parataxis:obj": [
+    "collectivity"
+  ],
+  "vocative": [
+    "person"
+  ],
+  "xcomp": [
+    "number",
+    "negation"
+  ],
+  "xcomp:cleft": [
+    "number"
+  ]
+}

@@ -1,0 +1,98 @@
+ładowanie morfeusza z opcją generacji do preprocessora!
+dzielenie słownika z preprocessorem
+
+Experiment:
+	1. agreement stats
+	2. rule induction
+	3.
+
+termo:
+java -Djava.library.path=/usr/lib/jni/ -jar TermoPL.jar -mw -tr 1200 -exp terms_out.txt -expf terms_forms.txt -exps terms_sents.txt parsed
+
+java -Djava.library.path=/usr/lib/jni/ -jar TermoPL.jar -mw -tr 1500 -exp terms_out.txt -expf terms_forms.txt -exps terms_sents.txt parsed
+
+java -Djava.library.path=/usr/lib/jni/ -jar TermoPL.jar -mw -tr 10 -exp terms_out.txt -expf terms_forms.txt -exps terms_sents.txt parsed_short2
+
+java -Xmx5G -Xms4G -Djava.library.path=/usr/lib/jni -jar TermoPL.jar  -out termoout -sw termopl_sw.txt -ct termopl_ct.txt -cp termopl_cp.txt -SORT cvalue -mw -tr 25 ppkz_12/*
+
+java -Xmx5G -Xms4G -Djava.library.path=/usr/lib/jni -jar TermoPL.jar  -exp terms_out.txt -expf terms_forms.txt -exps terms_sents.txt -sw termopl_sw.txt -ct termopl_ct.txt -cp termopl_cp.txt -SORT cvalue -mw -tr 1500 ../ccl
+
+flexer:
+	flexing fraz
+    zmiana do innej części mowy (np. gerundium, ale wymaga to najlepiej preferencji dla lematów, tj. do słownikowej formy dla danej części mowy)
+	lematyzacja fraz
+    konwersja liczb do słów i vice versa
+
+https://www.nodebox.net/code/index.php/Linguistics#verb_conjugation
+https://github.com/markrogersjr/nodebox_linguistics_extended/tree/master/nodebox_linguistics_extended
+
+https://github.com/CLARIN-PL/Polem
+
+
+
+3.2
+
+
+
+Cześć,
+
+W pracy przy Yosh korzystałem z nieco poszerzonej wersji flexera z modelu do spacy. Żeby on był faktycznie użyteczny w pracy z szablonami, konieczne było wprowadzenie obsługi fleksji dla fraz (np. "skórzane buty na obcasach" -> "skórzanych butów na obcasach", lub ogólnie Multi Word Expressions), a nie tylko pojedynczych słów. 
+
+Problem polega na tym, żeby być wrażliwym na relację uzgodnienia, wiedzieć jak powinna się propagować zmiana, np. dla frazy "największe jezioro na Mazurach" odmiana jej do celownika ("największemu jezioru na Mazurach"), wymaga zmiany pierwszych dwóch słów, ale bez zmiany ostatniego. Zrobiłem to wszystko bardzo topornie, ale generalnie sam pomysł wydaje się ciekawy, i może być przydatny. Szukałem czegoś o tym w literaturze, ale nie udało mi się wiele znaleźć. Dr Woliński pisał np. o fleksji w wypadku warszawskich nazw własnych tutaj https://link.springer.com/chapter/10.1007/978-3-642-04735-0_5, ale to jest raczej podejście słownikowe, no i artykuł ma już 11 lat. Żeby do tego jakoś sensownie podejść, można chyba wykorzystać drzewa zależnościowe, i propagować zmianę w głąb poddrzewa. Taka propagacja powinna być wrażliwa na etykiety np. relacja "case" idąca od "na" do "Mazurach" tłumaczy dlaczego odmiana "Mazurach" przez przypadek powinna być w takiej sytuacji zablokowana. Niektórych rzeczy na pewno nie dałoby się zrobić bez znajomości kontekstu (np. narzucenie liczby pojedynczej na "największe jeziora na Mazurach" powinno pominąć "Mazurach", choć przejście od "ruszyli z miejsc", do "ruszył z miejsca" jest już konieczne), ale być może przypadków prostych jest jednak na tyle dużo, że warto by spróbować jakiegoś podejścia regułowego. Nie miałem okazji eksperymentować z generacją tekstu od zera przez jakieś nowoczesne modele językowe, więc nie wiem na ile radzą one sobie z fleksją, i na ile czynią rozwiązania szablonowe dla języka polskiego zbędnymi.
+
+Znasz może jakąś literaturę na ten temat? Myślisz że coś takiego miałoby sens?
+
+Pozdrawiam,
+
+Ryszard
+
+
+
+
+
+
+
+Kwestia lematyzacji fraz i wyrażeń wielowyrazowych
+
+# koordynacja
+# rozwiązanie algorytmiczne
+# propagacja na podrzędniki - zmiana winna być zależna od etykiet (np. etykieta case powinna anulować propagację przypadka na jego nadrzędnik, etykieta iobj, powinna blokować zmianę przypadka)
+# propagacja na nadrzędniki, np. zmiana liczby od podmiotu do orzeczenia
+# wrzucanie negacji?
+# kwestie bardziej fonetyczne: ze mną vs z nami
+# kwestie wychodzenia poza jeden leksem morfeuszowy (np. przejście "mną" -> "nami" wychodzi poza leksem "ja")
+# zależy to od kombinacji etykiety i własności, pytanie czy ta zależność jest deterministyczna (a raczej na ile nie jest)
+# Zasadnicze zastosowanie byłoby raczej nie dla zmiany gotowych tekstów, tylko dla dostosowywania fraz do istniejących szablonów.
+
+
+
+TermoPL uses a fixed grammar for finding noun phrases
+Using neural classifier to decide whether to propagate each feature? [flat or lstm from top to bottom], this may help with semantics
+Diversity of constructions in the datasets
+Use more coordinations
+
+
+Fleksja powinna się propagować tylko tam, gdzie wartości morfosyntaktyczne wynikają z syntaktyki (np. liczba "studentów" w "najwyżsi ze studentów" wynika z semantyki, ale liczba "pieczone" w "pieczone orzeszki" wynika już z syntaktyki)
+
+Interesuje nas akomodacja morfologiczna
+
+"o opiekunkę lepszą od Marii"
+
+liczba powinna się propagować tylko dla podrzędników rzeczownika opisujących go
+
+macierz relacja x atrybut -> propagacja/niepropagacja
+ale macierz nie załatwia przyimków
+
+wymuszanie przypadka przez czasownik
+
+dwa podejścia:
+        propagacja + blokowanie (tablica propagacji)
+        akomodacja, i.e. tablica akomodacji
+
+relacja uzgodnienia jest do zrobienia, relacja narzucania raczej nie jest do wykrycia drogą korpusową (i jak w ogól ebyłaby zdefiniowana? leksykalnie?), ale też chyba nie jest potrzebna [jest aby blokować akomodację?, ale tylko akomodujemy, nie propagujemy]
+
+accomodability congr rec
+
+
+Centrum skłdniowe, a centrum semantyczne, drugie może być bardziej przyjazne dla użytkownika jako korzeń (i.e. UD jest dobre), ale czasami może trzeba wziąć pod uwagę pierwsze (SUD), np. w "Czworo dzieci" Czworo jest centrum składniowym, i narzuca przypadek, więc nie można modyfikować przypadka wychodząc od dzieci, raczej od czworga.
+
