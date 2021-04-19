@@ -22,19 +22,19 @@ class Decoder(nn.Module):
     def __init__(self, char_num, embedding_dim, encoder_dim, tag_dim, decoder_dim):
         super(Decoder, self).__init__()
         self.embedding = nn.Embedding(char_num, embedding_dim)
-        self.recurrent = nn.GRU(embedding_dim + tag_dim, decoder_dim)
+        self.recurrent = nn.LSTM(embedding_dim + tag_dim, decoder_dim)
         self.classifier = nn.Linear(decoder_dim, char_num)
         self.softmax = nn.Softmax(dim=1)
 
-    def forward(self, char_vector, last_hidden, tag_vector):
+    def forward(self, char_vector, last_hidden, last_cell, tag_vector):
         embedded_prev_char = self.embedding(char_vector)
         concatenated = cat([embedded_prev_char, tag_vector], axis=1)
         concatenated = concatenated.unsqueeze(0)
-        recurrent_out, hidden = self.recurrent(concatenated, last_hidden)
+        recurrent_out, (hidden, cell) = self.recurrent(concatenated, (last_hidden, last_cell))
         recurrent_out = recurrent_out.squeeze()
         classifier_out = self.classifier(recurrent_out)
         soft_out = self.softmax(classifier_out)
-        return soft_out, recurrent_out, hidden
+        return soft_out, recurrent_out, hidden, cell
 
 
 
@@ -43,3 +43,7 @@ def maskNLLLoss(inp, target, mask):
     crossEntropy = -torch.log(err)
     loss = crossEntropy.masked_select(mask).mean()
     return loss
+
+
+#LSTM zamiast GRU
+#Bidirectionality
