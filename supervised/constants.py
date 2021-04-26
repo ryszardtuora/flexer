@@ -1,4 +1,4 @@
-from settings import *
+from .settings import *
 
 
 FUNCTIONAL_TOKENS = ["PAD", "START", "END"]

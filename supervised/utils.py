@@ -1,8 +1,8 @@
 import random
 import torch
 from itertools import product
-from constants import CHARACTERS, INVALID_TAGS, ALL_FEATS
-from settings import LOWER_CASE
+from .constants import CHARACTERS, INVALID_TAGS, ALL_FEATS
+from .settings import LOWER_CASE
 
 
 
