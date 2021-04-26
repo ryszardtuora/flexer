@@ -1,1 +1,0 @@
-LOWER_CASE = True

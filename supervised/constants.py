@@ -1,6 +1,5 @@
-from .settings import *
 
-
+LOWER_CASE = True
 FUNCTIONAL_TOKENS = ["PAD", "START", "END"]
 if LOWER_CASE:
     CHARACTERS = list('-./abcdefghijklmnopqrstuvwxyzóąćęłńśźż’') + FUNCTIONAL_TOKENS

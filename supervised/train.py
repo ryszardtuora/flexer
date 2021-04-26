@@ -1,7 +1,7 @@
 import random
-from .constants import CHARACTERS, ALL_FEATS
-from .utils import lines_to_training_examples
-from .network import Encoder, Decoder, maskNLLLoss
+from constants import CHARACTERS, ALL_FEATS
+from utils import lines_to_training_examples
+from network import Encoder, Decoder, maskNLLLoss
 from torch import optim
 from tqdm import tqdm
 import torch
