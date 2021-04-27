@@ -217,7 +217,7 @@ if __name__ == "__main__":
 
 
     EPOCHS = 5
-    num_train_batches = 5000
+    num_train_batches = 15000
     num_dev_batches = 500
     last_acc = 0
 
@@ -248,12 +248,13 @@ if __name__ == "__main__":
       print(f"\tdev loss: {dev_epoch_loss:.2f}")
       print(f"\t dev accuracy: {acc:.2f}%")
 
-    encoder = torch.load("encoder.mdl")#
-    decoder = torch.load("decoder.mdl")
+    encoder.load_state_dict(torch.load("encoder.mdl"))#
+    decoder.load_state_dict(torch.load("decoder.mdl"))
 
     correct, total = 0, 0
     test_epoch_loss = 0
     num_test_batches = 500
+    print(len(test_keys), len(test_freq_dist))
     for n in range(num_test_batches):
         (in_char_tensors, in_mask), (out_char_tensors, out_mask), tag_tensors = sample_batch(test_keys, test_freq_dist, lines, lemma_to_lines, BATCH_SIZE)
         test_loss, decoder_outputs = test_on_batch(in_char_tensors, in_mask, out_char_tensors, out_mask, tag_tensors, encoder, decoder)
@@ -269,6 +270,8 @@ if __name__ == "__main__":
     #torch.save(encoder, "encoder.mdl")
     #torch.save(decoder, "decoder.mdl")
     """
+    # Świdziński i Saloni traktują wymagania akomodacyjne jako leksykalne (a nie zależne od pozycji w drzewie), to prowadzi do takich dziwnych analiz jak przypisywanie niemal każdemu rzeczownikowy klasy selektywnej dopełniacza (dla umożliwienia modyfikatorów rzeczownikowych)
+    # w ogóle jaki jest status ich opisu, czy opisują związki konieczne, czy konieczne jeśli występują określone formy? Zlewa się tak naprawdę z walencją.
     # zlewanie rozpodobniaczy?
     # xxx?
     # podawanie lemma charów jest złe, poprawiłem tutaj, ale nie w innych miejscach, dwa razy był podawany pierwszy znak

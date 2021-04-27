@@ -61,13 +61,16 @@ def sample_batch(keys, freq_dist, lines, lemma_to_lines, size):
     line_ids = [lemma_to_lines[k] for k in sampled_keys]
     ins, outs, tags = [], [] , []
     for line_list in line_ids:
-        ind = random.choice(line_list)
-        line = lines[ind]
-        form, lemma, tag, _ = line.split("\t", 3)
-        lemma = lemma.split(":")[0]
-        outs.append(form)
-        ins.append(lemma)
-        tags.append(tag)
+        if len(line_list) > 1:
+            ind1, ind2 = random.sample(line_list, 2)
+        else:
+            ind1, ind2 = 0, 0
+        line1, line2 = lines[ind1], lines[ind2]
+        in_form,  _ = line1.split("\t", 1)
+        out_form, _ , out_tag, _ = line2.split("\t", 3)
+        outs.append(out_form)
+        ins.append(in_form)
+        tags.append(out_tag)
     in_char_tensors = words_to_tensor(ins)
     out_char_tensors = words_to_tensor(outs, append_end=True)
     tag_tensors = tags_to_tensors(tags)
