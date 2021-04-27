@@ -198,7 +198,7 @@ if __name__ == "__main__":
     last_acc = 0
 
 
-    for epoch in range(EPOCHS):
+    for epoch in range(0):#EPOCHS):
       random.shuffle(train_data)
       print(f"epoch no {epoch+1}")
       epoch_loss = 0
@@ -227,8 +227,10 @@ if __name__ == "__main__":
       print(f"\tdev loss: {dev_epoch_loss:.2f}")
       print(f"\t dev accuracy: {acc:.2f}%")
 
-    encoder = torch.load("encoder.mdl")#
-    decoder = torch.load("decoder.mdl")
+    encoder = Encoder(NUM_CHARS, EMBEDDING_DIM, ENCODER_WIDTH)
+    decoder = Decoder(NUM_CHARS, EMBEDDING_DIM, TAG_DIM, DECODER_DIM)
+    encoder.load_state_dict(torch.load("encoder.mdl"))
+    decoder.load_state_dict(torch.load("decoder.mdl"))
 
     correct, total = 0, 0
     test_epoch_loss = 0
