@@ -55,3 +55,20 @@ def lines_to_training_examples(lines):
     out_char_tensors = words_to_tensor(forms, append_end=True)
     tag_tensors = tags_to_tensors(tags)
     return in_char_tensors, out_char_tensors, tag_tensors
+
+def sample_batch(keys, freq_dist, lines, lemma_to_lines, size):
+    sampled_keys = random.choices(population=keys, weights=freq_dist, k=size)
+    line_ids = [lemma_to_lines[k] for k in sampled_keys]
+    ins, outs, tags = [], [] , []
+    for line_list in line_ids:
+        ind = random.choice(line_list)
+        line = lines[ind]
+        form, lemma, tag, _ = line.split("\t", 3)
+        lemma = lemma.split(":")[0]
+        outs.append(form)
+        ins.append(lemma)
+        tags.append(tag)
+    in_char_tensors = words_to_tensor(ins)
+    out_char_tensors = words_to_tensor(outs, append_end=True)
+    tag_tensors = tags_to_tensors(tags)
+    return in_char_tensors, out_char_tensors, tag_tensors
