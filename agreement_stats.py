@@ -61,7 +61,6 @@ for doc in docs:
     for feat in feats:
       if feat in ["pt", "nol"]: # plurale tantum and nol are not supported by morfeusz
         continue
-      feat_set.add(feat)
       attr = val2attr[feat] # translating values into attributes for which they are defined
       if feat in head_feats:
         if deprel in agreement_table:

@@ -31,3 +31,52 @@ def line_to_training_examples(line):
   out_char_tensor = word_to_tensor(form)
   tag_tensors = tag_to_tensors(tag)
   return in_char_tensor, out_char_tensor, tag_tensors
+
+
+def group_by_lemmas(lines, split=0.9):
+    dict = {}
+    for i, l in enumerate(lines):
+        lemma = l.split("\t")[1]
+        if lemma in dict:
+            dict[lemma].append(i)
+        else:
+            dict[lemma] = [i]
+
+
+def group_by_lemmas(lines, split=0.9):
+    dict = {}
+    for i, l in enumerate(lines):
+        lemma = l.split("\t")[1]
+        if lemma in dict:
+            dict[lemma].append(i)
+        else:
+            dict[lemma] = [i]
+    keys = list(dict.keys())
+    random.shuffle(keys)
+    split_point = int(len(keys)*split)
+    dev_split = (1-split)/2
+    dev_split_point = int(len(keys)*(split+dev_split))
+    train_keys = keys[:split_point]
+    dev_keys = keys[split_point:dev_split_point]
+    test_keys = keys[dev_split_point:]
+    seg_lists = []
+    for seg in [train_keys, dev_keys, test_keys]:
+        seg_list = [None for _ in range(sum([len(dict[k]) for k in seg]))]
+        ind = 0
+        for key in seg:
+            for i in dict[key]:
+                seg_list[ind] = lines[i]
+                ind += 1
+        seg_lists.append(seg_list)
+    train, dev, test = seg_lists
+    return train, dev, test
+
+
+def x():
+    with open("")
+
+
+
+
+
+numpy.random.choice(keys, size=2, replace=False, p=freq_dist)

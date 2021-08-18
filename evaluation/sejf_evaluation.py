@@ -90,14 +90,14 @@ def evaluate_lemmatizer(data):
 
 data = prepare_data()
 random.shuffle(data)
-test_ex = data[:5000]
+test_ex = data#[:500]
 
 flex_output = evaluate_flexer(test_ex)
-lem_output = evaluate_lemmatizer(test_ex)
+#lem_output = evaluate_lemmatizer(test_ex)
 
 flex_df = DataFrame(flex_output)
 #flex_df.to_csv("SEJF_flex_out.tsv", sep="\t")
 flex_df.to_csv("SEJF_flex_out_induced.tsv", sep="\t")
-lem_df = DataFrame(lem_output)
+#lem_df = DataFrame(lem_output)
 #lem_df.to_csv("SEJF_lem_out.tsv", sep="\t")
-lem_df.to_csv("SEJF_lem_out_induced.tsv", sep="\t")
+#lem_df.to_csv("SEJF_lem_out_induced.tsv", sep="\t")
