@@ -12,6 +12,21 @@ UmFeats = FrozenSet[UmFeat]
 EMPTY_FEAT = UmFeat("_")
 UD2UM_FILE = "UD-UniMorph.tsv"
 
+POS_TAGS = ["ADV",
+            "PRO",
+            "ADP",
+            "DET",
+            "N",
+            "ADJ",
+            "CONJ",
+            "NUM",
+            "PROPN",
+            "PART",
+            "INTJ",
+            "V",
+            ]
+
+
 class UdTag(Set):
     def __init__(self, tag: str) -> None:
         self.data = set(tag.split("|"))
@@ -165,7 +180,12 @@ class Translator():
                     UmFeat(f"{{{'/'.join(all_parts)}}}") if all_parts else EMPTY_FEAT
                 )
         um_tag = [f for f in um_tag if str(f) != "_"] or [EMPTY_FEAT]
-        return UmTag(";".join(um_tag))
+        feats = ";".join([f for f in um_tag if f not in POS_TAGS])
+        try:
+            pos_tag = [f for f in um_tag if f in POS_TAGS][0]
+        except IndexError:
+            pos_tag = "X"
+        return pos_tag, feats
     
     def process_tag(self, part: UdFeat) -> UmFeat:
         try:
@@ -182,9 +202,8 @@ class Translator():
             return um_part
 
     def translate(self, conllu_line):
-        print(conllu_line)
         record = CoNLLRow.make(conllu_line) 
         ud_tag = UdTag(f"{record.upostag}|{record.feats}")
-        um_tag = self.ud2um(ud_tag)
-        return um_tag
+        pos_tag, feats = self.ud2um(ud_tag)
+        return pos_tag, feats
 

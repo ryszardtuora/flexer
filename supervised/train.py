@@ -270,6 +270,9 @@ if __name__ == "__main__":
     #torch.save(encoder, "encoder.mdl")
     #torch.save(decoder, "decoder.mdl")
     """
+    # umlautung
+    # Nie levenshtein i profile, tylko feature set i symmetric difference
+    # Czesi mają Morphoditę, która jest analogiczna do Morfeusza -> pozwala na generację poprzez paradygmaty, po niemiecku SMOR
     # Świdziński i Saloni traktują wymagania akomodacyjne jako leksykalne (a nie zależne od pozycji w drzewie), to prowadzi do takich dziwnych analiz jak przypisywanie niemal każdemu rzeczownikowy klasy selektywnej dopełniacza (dla umożliwienia modyfikatorów rzeczownikowych)
     # w ogóle jaki jest status ich opisu, czy opisują związki konieczne, czy konieczne jeśli występują określone formy? Zlewa się tak naprawdę z walencją.
     # zlewanie rozpodobniaczy?

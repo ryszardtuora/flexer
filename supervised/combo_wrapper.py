@@ -30,7 +30,6 @@ class ComboWrapper():
         translated_lines = [self.translator.translate(line) for line in lines]
         return translated_lines
 
-
     def process(self, text):
         sentence = self.nlp(text)
         translated_morph =  self.extract_unimorph(sentence)
@@ -42,8 +41,7 @@ class ComboWrapper():
             lemma = tok.lemma
             pos_tag, feats = self.read_morphology(tok)
             if self.use_translation:
-                feats = translated_morph[ind]
-                print(feats)
+                pos_tag, feats = translated_morph[ind]
             head = tok.head-1
             deprel = tok.deprel
             start_ind = text[end_ind:].find(orth) + end_ind
@@ -61,7 +59,13 @@ class ComboWrapper():
     def read_morphology(self, token):
         if self.model_name.startswith("polish"):
             # handling different ways of encoding morphology 
-            pos_tag, feats = token.xpostag.split(":", 1)
+            split_tag = token.xpostag.split(":", 1)
+            pos_tag = split_tag[0]
+            if len(split_tag) > 1:
+                feats = split_tag[1]
+            else:
+                feats = ""
+
         else:
             pos_tag = token.upostag
             feats = token.feats

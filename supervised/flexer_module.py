@@ -1,4 +1,3 @@
-import distance
 import json
 import torch
 from network import Decoder, Encoder
@@ -60,6 +59,10 @@ class Flexer(object):
     #self.inflection_decoder.eval()
     self.inflection_mode = "DICT"
 
+  def tag_distance(self, taglist1, taglist2):
+      distance = len(set(taglist1).symmetric_difference(set(taglist2)))
+      return distance
+
   def neural_process_word(self, in_char_tensor, in_mask, tag_tensor):
     with torch.no_grad():
       in_lens = in_mask.sum(axis=1)
@@ -104,23 +107,6 @@ class Flexer(object):
     inflected = "".join(chars)
     return inflected
 
-  #def dict_flex(self, lemma, tag, target_pattern):
-    #def gen_to_tag(gen):
-      #return gen[2].split(":")
-
-    ##split_tag = tag.split(":")
-    #split_target_pattern = target_pattern.split(":")
-    #generation = self.morf.generate(lemma)
-    ## we select only those generated forms, which satisfy the required pattern
-    #right = [g for g in generation if all([f in gen_to_tag(g) for f in split_target_pattern])]
-    #if right == []:
-      #return None
-    #else:
-      #srt = sorted(right, key = lambda g: distance.levenshtein(split_tag, gen_to_tag(g)))
-      ## we choose the form most levenshtein similar to our initial tag
-      #inflected = srt[0][0]
-    #return inflected
-  
   def dict_flex(self, lemma, current_tag, target_pattern):
     def gen_to_tag(gen):
       full_tag = gen["full_tag"]
@@ -130,11 +116,12 @@ class Flexer(object):
     split_current_tag = current_tag.split(":")
     split_target_pattern = target_pattern.split(":")
     generation = self.inflection_dict.generate(lemma)
+    ## we select only those generated forms, which satisfy the required pattern
     satisfactory = [g for g in generation if all([f in gen_to_tag(g) for f in split_target_pattern])]
     if not satisfactory:
       return None# TODO może tutaj zwracać jednak najbliższą levenshteinem do DOCELOWEGO, albo inną miarą dystansu do sumy?
     else:
-        srt = sorted(satisfactory, key=lambda g:distance.levenshtein(split_current_tag, gen_to_tag(g)))
+        srt = sorted(satisfactory, key=lambda g:self.tag_distance(split_current_tag, gen_to_tag(g)))
         # we choose the form most levenshtein similar to our initial tag
         inflected = srt[0]["form"]
     return inflected
@@ -202,7 +189,7 @@ class Flexer(object):
       inflected_head = head.orth + head.whitespace
       governor = governing_children[0]
       inflected_governor_subtree = self.flex_subtree(governor, tokens, target_pattern)
-      id_to_inflected.update(inflected_governor_subtree)
+      ind_to_inflected.update(inflected_governor_subtree)
 
     else:
       inflected_head = self.flex_token(head, target_pattern) + head.whitespace
@@ -269,6 +256,4 @@ class Flexer(object):
     seq = sorted([(i, t) for i, t in ind_to_inflected.items()])
     phrase = "".join([t for i, t in seq]).strip()
     return phrase
-
-
 
