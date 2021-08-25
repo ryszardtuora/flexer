@@ -42,6 +42,7 @@ class ComboWrapper():
             pos_tag, feats = self.read_morphology(tok)
             if self.use_translation:
                 pos_tag, feats = translated_morph[ind]
+                feats = feats.replace(";", ":")
             head = tok.head-1
             deprel = tok.deprel
             start_ind = text[end_ind:].find(orth) + end_ind

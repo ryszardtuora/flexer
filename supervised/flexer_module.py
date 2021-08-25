@@ -2,44 +2,9 @@ import json
 import torch
 from network import Decoder, Encoder
 
-#FUNCTIONAL_TOKENS = ["PAD", "START", "END"]
-#CHARACTERS = list('-./abcdefghijklmnopqrstuvwxyzóąćęłńśźż’') + FUNCTIONAL_TOKENS
-#
-#
-#ALL_FEATS = []
-#for attr, feats in ATTR2FEATS:
-#    ALL_FEATS.extend(feats)
-#
-#NUM_CHARS = len(CHARACTERS)
-#EMBEDDING_DIM = 42#50
-#ENCODER_WIDTH = 70#50#100
-#DECODER_DIM = 140#100
-#TAG_DIM = len(ALL_FEATS)
-#
-
-def word_to_tensor(word):
-    pad_token = CHARACTERS.index("PAD")
-    char_indices = []
-    word = word.lower()
-    chars = [c for c in word if c in CHARACTERS]
-    char_indices = [CHARACTERS.index(c) for c in chars]
-    max_len = len(char_indices)
-    pad_vector = [0 for _ in range(max_len)]
-    words_tensor = torch.LongTensor([char_indices, pad_vector])
-    mask_tensor = (words_tensor != pad_token).int()
-    return words_tensor, mask_tensor
-
-def tag_to_tensor(tag):
-    tag_tensor = torch.zeros((2, len(ALL_FEATS)))
-    feats = tag.split(":")
-    indices = [ALL_FEATS.index(v) for v in feats]
-    for i in indices:
-        tag_tensor[0][i] = 1
-    return tag_tensor
-
 class Flexer(object):
   name = "flexer"
-  def __init__(self, nlp, morphology_file, inflection_dict):
+  def __init__(self, nlp, morphology_file, inflection_dict, inflection_mode):
     self.nlp = nlp # this object should return a list of Token objects
     with open(morphology_file) as f:
       data = json.load(f)
@@ -48,16 +13,27 @@ class Flexer(object):
     self.governing_deprels = data["GOVERNING_DEPRELS"] # a list of deprels with inverted dependency structure (i.e. governing children)
     self.accomodation_rules = data["ACCOMODATION_RULES"] # A deprel -> agreement attrs dict
     self.inflection_dict = inflection_dict
+    self.inflexible_pos = data["INFLEXIBLE_POS"]
+    self.characters = data["CHARACTERS"]
 
 
+    if inflection_mode == "DICT":
+        self.inflection_mode = "DICT"
 
-    ##self.inflection_encoder = Encoder(NUM_CHARS, EMBEDDING_DIM, ENCODER_WIDTH)
-    #self.inflection_encoder.load_state_dict(torch.load("encoder.mdl"))
-    #self.inflection_decoder = Decoder(NUM_CHARS, EMBEDDING_DIM, TAG_DIM, DECODER_DIM)
-    #self.inflection_decoder.load_state_dict(torch.load("decoder.mdl"))
-    #self.inflection_encoder.eval()
-    #self.inflection_decoder.eval()
-    self.inflection_mode = "DICT"
+    elif inflection_mode == "NEURO":
+        self.inflection_mode = "NEURO"
+        num_chars = len(data["CHARACTERS"])
+        embedding_dim = 42
+        encoder_width = 70
+        tag_dim = len(data["VAL2ATTR"])
+        decoder_dim = 140
+        self.inflection_encoder = Encoder(num_chars, EMBEDDING_DIM, ENCODER_WIDTH)
+        self.inflection_encoder.load_state_dict(torch.load("encoder.mdl"))
+        self.inflection_decoder = Decoder(num_chars, EMBEDDING_DIM, TAG_DIM, DECODER_DIM)
+        self.inflection_decoder.load_state_dict(torch.load("decoder.mdl"))
+        self.inflection_encoder.eval()
+        self.inflection_decoder.eval()
+
 
   def tag_distance(self, taglist1, taglist2):
       distance = len(set(taglist1).symmetric_difference(set(taglist2)))
@@ -67,7 +43,7 @@ class Flexer(object):
     with torch.no_grad():
       in_lens = in_mask.sum(axis=1)
       encoder_outputs, encoder_hidden = self.inflection_encoder(in_char_tensor, in_lens)
-      prev_char = torch.LongTensor([CHARACTERS.index("START") for _ in range(2)])
+      prev_char = torch.LongTensor([self.characters.index("START") for _ in range(2)])
       decoder_hidden = encoder_hidden
       decoder_cell = torch.zeros(decoder_hidden.shape)
       in_char_tensor = in_char_tensor.permute([1,0])
@@ -78,12 +54,12 @@ class Flexer(object):
         if t < len(in_char_tensor):
           lemma_char = in_char_tensor[t]
         else:
-          lemma_char = torch.LongTensor([CHARACTERS.index("END") for _ in range(2)])
+          lemma_char = torch.LongTensor([self.characters.index("END") for _ in range(2)])
         decoder_output, _, decoder_hidden, decoder_cell = self.inflection_decoder(
           prev_char, lemma_char, decoder_hidden, decoder_cell, tag_tensor
         )
         _, topi = decoder_output.topk(1)
-        continuation = topi[0].item() != CHARACTERS.index("END")
+        continuation = topi[0].item() != self.characters.index("END")
         prev_char = torch.LongTensor([[topi[i][0] for i in range(2)]]).squeeze()
 
         top_indices.append(topi)
@@ -97,13 +73,13 @@ class Flexer(object):
     attr_to_val = {self.val2attr[val]:val for val in tag.split(":")}
     for val in target_pattern.split(":"):
         attr_to_val[self.val2attr[val]] = val
-    if attr_to_val["pos"] in ["xxx", "interp", "qub"]:
+    if attr_to_val["Part of Speech"] in self.inflexible_pos: 
         return lemma
     full_tag = ":".join(attr_to_val.values())
     tag_tensor = tag_to_tensor(full_tag)
     out = self.neural_process_word(char_tensor, in_mask, tag_tensor)
     word = out[0]
-    chars = [CHARACTERS[i] for i in word if CHARACTERS[i]!="END"]
+    chars = [self.characters[i] for i in word if CHARACTERS[i]!="END"]
     inflected = "".join(chars)
     return inflected
 
@@ -116,14 +92,18 @@ class Flexer(object):
     split_current_tag = current_tag.split(":")
     split_target_pattern = target_pattern.split(":")
     generation = self.inflection_dict.generate(lemma)
+    print(generation)
     ## we select only those generated forms, which satisfy the required pattern
     satisfactory = [g for g in generation if all([f in gen_to_tag(g) for f in split_target_pattern])]
     if not satisfactory:
       return None# TODO może tutaj zwracać jednak najbliższą levenshteinem do DOCELOWEGO, albo inną miarą dystansu do sumy?
     else:
-        srt = sorted(satisfactory, key=lambda g:self.tag_distance(split_current_tag, gen_to_tag(g)))
-        # we choose the form most levenshtein similar to our initial tag
-        inflected = srt[0]["form"]
+      for entry in satisfactory:
+          entry["score"] = self.tag_distance(split_current_tag, gen_to_tag(entry))
+      srt = sorted(satisfactory, key=lambda g:g["score"])
+      #srt = sorted(satisfactory, key=lambda g:self.tag_distance(split_current_tag, gen_to_tag(g)))
+      # we choose the form most levenshtein similar to our initial tag
+      inflected = srt[0]["form"]
     return inflected
 
   def get_case_fun(self, token_string):
@@ -218,15 +198,20 @@ class Flexer(object):
     governing_children = [child for child in children if child.deprel in self.governing_deprels]
     if governing_children:
       governor = governing_children[0]
-      lemmatized_governor_subtree = self.lemmatize_subtree(governor)
+      lemmatized_governor_subtree = self.lemmatize_subtree(governor, tokens)
       ind_to_lemmatized.update(lemmatized_governor_subtree)
       ind_to_lemmatized[head.ind] = head.orth
       target_pattern = ""
 
     else:
+      # BASIC:
       lemmatized_head = head.lemma + head.whitespace
       target_pattern = self.nlp(lemmatized_head)[0].feats
-      ind_to_lemmatized[head.ind] = lemmatized_head
+
+      #target_pattern = self.inflection_dict.get_feats_from_lemma(head.lemma, "")
+      #print(target_pattern)
+      #lemmatized_head, _, target_pattern = self.inflection_dict.lemmatize(head.orth) 
+      ind_to_lemmatized[head.ind] = lemmatized_head + head.whitespace
 
     for child in children_to_lemmatize:
       child_deprel = child.deprel

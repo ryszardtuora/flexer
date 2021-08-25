@@ -1,147 +1,152 @@
+import json
 import pandas
 import numpy
 import random
-from constants import CHARACTERS, ALL_FEATS
-from utils import lines_to_training_examples, sample_batch
+from utils import DataLoader
 from network import Encoder, Decoder, maskNLLLoss
 from torch import optim
 from tqdm import tqdm
 import torch
 
 #encoder and decoder optimizer
-def train_on_batch(in_char_tensors, in_mask, out_char_tensors, out_mask, tag_tensors, encoder, decoder,
-                   encoder_optimizer, decoder_optimizer):
-    encoder.train()
-    decoder.train()
-    encoder_optimizer.zero_grad()
-    decoder_optimizer.zero_grad()
+class NeuroFlexer():
+    def __init__(self, data_loader):
+        self.data_loader = data_loader
 
-    in_lens = in_mask.sum(axis=1)
-    out_lens = out_mask.sum(axis=1)
-    loss = 0
-    batch_size = in_char_tensors.shape[0]
-    encoder_outputs, encoder_hidden = encoder(in_char_tensors, in_lens)
-    prev_char = torch.LongTensor([CHARACTERS.index("START") for _ in range(batch_size)])
+    def train_on_batch(self, in_char_tensors, in_mask, out_char_tensors, out_mask, tag_tensors, encoder, decoder,
+                       encoder_optimizer, decoder_optimizer):
+        encoder.train()
+        decoder.train()
+        encoder_optimizer.zero_grad()
+        decoder_optimizer.zero_grad()
 
-    decoder_hidden = encoder_hidden
-    decoder_cell = torch.zeros(decoder_hidden.shape)
-
-    out_char_tensors = out_char_tensors.permute([1,0])
-    out_mask = out_mask.permute([1,0])
-    in_char_tensors = in_char_tensors.permute([1,0])
-
-    use_teacher_forcing = random.random() < TEACHER_FORCING_RATIO
-    max_target_len = max(out_lens)
-    if use_teacher_forcing:
-        for t in range(max_target_len):
-            if t < len(in_char_tensors):
-                lemma_char = in_char_tensors[t]
-            else:
-                lemma_char = torch.LongTensor([CHARACTERS.index("END") for _ in range(batch_size)])
-            decoder_output, _, decoder_hidden, decoder_cell = decoder(
-                prev_char, lemma_char, decoder_hidden, decoder_cell, tag_tensors
-            )
-            prev_char = out_char_tensors[t]
-            if t < len(in_char_tensors):
-                lemma_char = in_char_tensors[t]
-            else:
-                lemma_char = torch.LongTensor([CHARACTERS.index("END") for _ in range(batch_size)])
-            mask_loss = maskNLLLoss(decoder_output, out_char_tensors[t], out_mask[t].bool())
-            loss += mask_loss
-    else:
-        for t in range(max_target_len):
-            if t < len(in_char_tensors):
-                lemma_char = in_char_tensors[t]
-            else:
-                lemma_char = torch.LongTensor([CHARACTERS.index("END") for _ in range(batch_size)])
-            decoder_output, _, decoder_hidden, decoder_cell = decoder(
-                prev_char, lemma_char, decoder_hidden, decoder_cell, tag_tensors
-            )
-            _, topi = decoder_output.topk(1)
-            prev_char = torch.LongTensor([[topi[i][0] for i in range(batch_size)]]).squeeze()
-            if t < len(in_char_tensors):
-                lemma_char = in_char_tensors[t]
-            else:
-                lemma_char = torch.LongTensor([CHARACTERS.index("END") for _ in range(batch_size)])
-            mask_loss = maskNLLLoss(decoder_output, out_char_tensors[t], out_mask[t].bool())
-            loss += mask_loss
-    loss.backward()
-
-    _ = torch.nn.utils.clip_grad_norm_(encoder.parameters(), 1)
-    _ = torch.nn.utils.clip_grad_norm_(decoder.parameters(), 1)
-
-    encoder_optimizer.step()
-    decoder_optimizer.step()
-    return loss.item()
-
-
-def test_on_batch(in_char_tensors, in_mask, out_char_tensors, out_mask, tag_tensors, encoder, decoder):
-    _ = encoder.eval()
-    _ = decoder.eval()
-    loss = 0
-    batch_size = in_char_tensors.shape[0]
-    with torch.no_grad():
         in_lens = in_mask.sum(axis=1)
         out_lens = out_mask.sum(axis=1)
+        loss = 0
+        batch_size = in_char_tensors.shape[0]
         encoder_outputs, encoder_hidden = encoder(in_char_tensors, in_lens)
-        prev_char = torch.LongTensor([CHARACTERS.index("START") for _ in range(batch_size)])
+        prev_char = torch.LongTensor([self.data_loader.characters.index("START") for _ in range(batch_size)])
+
         decoder_hidden = encoder_hidden
         decoder_cell = torch.zeros(decoder_hidden.shape)
+
         out_char_tensors = out_char_tensors.permute([1,0])
         out_mask = out_mask.permute([1,0])
         in_char_tensors = in_char_tensors.permute([1,0])
+
+        use_teacher_forcing = random.random() < TEACHER_FORCING_RATIO
         max_target_len = max(out_lens)
-        top_indices = []
-        for t in range(max_target_len):
-            if t < len(in_char_tensors):
-                lemma_char = in_char_tensors[t]
-            else:
-                lemma_char = torch.LongTensor([CHARACTERS.index("END") for _ in range(batch_size)])
-            decoder_output, _, decoder_hidden, decoder_cell = decoder(
-                prev_char, lemma_char, decoder_hidden, decoder_cell, tag_tensors
-            )
-            _, topi = decoder_output.topk(1)
-            prev_char = torch.LongTensor([[topi[i][0] for i in range(batch_size)]]).squeeze()
+        if use_teacher_forcing:
+            for t in range(max_target_len):
+                if t < len(in_char_tensors):
+                    lemma_char = in_char_tensors[t]
+                else:
+                    lemma_char = torch.LongTensor([self.data_loader.characters.index("END") for _ in range(batch_size)])
+                decoder_output, _, decoder_hidden, decoder_cell = decoder(
+                    prev_char, lemma_char, decoder_hidden, decoder_cell, tag_tensors
+                )
+                prev_char = out_char_tensors[t]
+                if t < len(in_char_tensors):
+                    lemma_char = in_char_tensors[t]
+                else:
+                    lemma_char = torch.LongTensor([self.data_loader.characters.index("END") for _ in range(batch_size)])
+                mask_loss = maskNLLLoss(decoder_output, out_char_tensors[t], out_mask[t].bool())
+                loss += mask_loss
+        else:
+            for t in range(max_target_len):
+                if t < len(in_char_tensors):
+                    lemma_char = in_char_tensors[t]
+                else:
+                    lemma_char = torch.LongTensor([self.data_loader.characters.index("END") for _ in range(batch_size)])
+                decoder_output, _, decoder_hidden, decoder_cell = decoder(
+                    prev_char, lemma_char, decoder_hidden, decoder_cell, tag_tensors
+                )
+                _, topi = decoder_output.topk(1)
+                prev_char = torch.LongTensor([[topi[i][0] for i in range(batch_size)]]).squeeze()
+                if t < len(in_char_tensors):
+                    lemma_char = in_char_tensors[t]
+                else:
+                    lemma_char = torch.LongTensor([self.data_loader.characters.index("END") for _ in range(batch_size)])
+                mask_loss = maskNLLLoss(decoder_output, out_char_tensors[t], out_mask[t].bool())
+                loss += mask_loss
+        loss.backward()
 
-            mask_loss = maskNLLLoss(decoder_output, out_char_tensors[t], out_mask[t].bool())
-            loss += mask_loss
-            top_indices.append(topi)
-    decoder_outputs = torch.cat(top_indices, axis=1)
-    return loss, decoder_outputs
+        _ = torch.nn.utils.clip_grad_norm_(encoder.parameters(), 1)
+        _ = torch.nn.utils.clip_grad_norm_(decoder.parameters(), 1)
+
+        encoder_optimizer.step()
+        decoder_optimizer.step()
+        return loss.item()
 
 
-def accuracy(out, target):
-    correct, total = 0, 0
-    for out_seq, target_seq in zip(out, target):
-        total += 1
-        for out_char, target_char in zip(out_seq, target_seq):
-            if out_char != target_char:
-                break
-            else:
-                if out_char == CHARACTERS.index("END"):
-                    correct += 1
-    return correct, total
+    def test_on_batch(self, in_char_tensors, in_mask, out_char_tensors, out_mask, tag_tensors, encoder, decoder):
+        _ = encoder.eval()
+        _ = decoder.eval()
+        loss = 0
+        batch_size = in_char_tensors.shape[0]
+        with torch.no_grad():
+            in_lens = in_mask.sum(axis=1)
+            out_lens = out_mask.sum(axis=1)
+            encoder_outputs, encoder_hidden = encoder(in_char_tensors, in_lens)
+            prev_char = torch.LongTensor([self.data_loader.characters.index("START") for _ in range(batch_size)])
+            decoder_hidden = encoder_hidden
+            decoder_cell = torch.zeros(decoder_hidden.shape)
+            out_char_tensors = out_char_tensors.permute([1,0])
+            out_mask = out_mask.permute([1,0])
+            in_char_tensors = in_char_tensors.permute([1,0])
+            max_target_len = max(out_lens)
+            top_indices = []
+            for t in range(max_target_len):
+                if t < len(in_char_tensors):
+                    lemma_char = in_char_tensors[t]
+                else:
+                    lemma_char = torch.LongTensor([self.data_loader.characters.index("END") for _ in range(batch_size)])
+                decoder_output, _, decoder_hidden, decoder_cell = decoder(
+                    prev_char, lemma_char, decoder_hidden, decoder_cell, tag_tensors
+                )
+                _, topi = decoder_output.topk(1)
+                prev_char = torch.LongTensor([[topi[i][0] for i in range(batch_size)]]).squeeze()
 
-def process_words(lemmas, forms, tags, encoder, decoder):
-    lines = []
-    for lemma, form, tag in zip(lemmas, forms, tags):
-        line = "\t".join([form, lemma, tag, ""])
-        lines.append(line)
-    (in_char_tensors, in_mask), (out_char_tensors, out_mask), tag_tensors = lines_to_training_examples(lines)
-    dev_loss, decoder_outputs = test_on_batch(in_char_tensors, in_mask, out_char_tensors, out_mask, tag_tensors, encoder, decoder)
-    out_words = []
-    for word in decoder_outputs:
-        chars = [CHARACTERS[i] for i in word]
-        out = "".join(chars)
-        out_words.append(out)
-    return out_words
+                mask_loss = maskNLLLoss(decoder_output, out_char_tensors[t], out_mask[t].bool())
+                loss += mask_loss
+                top_indices.append(topi)
+        decoder_outputs = torch.cat(top_indices, axis=1)
+        return loss, decoder_outputs
 
-def load_data(split=0.9):
+
+    def accuracy(self, out, target):
+        correct, total = 0, 0
+        for out_seq, target_seq in zip(out, target):
+            total += 1
+            for out_char, target_char in zip(out_seq, target_seq):
+                if out_char != target_char:
+                    break
+                else:
+                    if out_char == self.data_loader.characters.index("END"):
+                        correct += 1
+        return correct, total
+
+    def process_words(self, lemmas, forms, tags, encoder, decoder):
+        lines = []
+        for lemma, form, tag in zip(lemmas, forms, tags):
+            line = "\t".join([form, lemma, tag, ""])
+            lines.append(line)
+        (in_char_tensors, in_mask), (out_char_tensors, out_mask), tag_tensors = lines_to_training_examples(lines)
+        dev_loss, decoder_outputs = self.test_on_batch(in_char_tensors, in_mask, out_char_tensors, out_mask, tag_tensors, encoder, decoder)
+        out_words = []
+        for word in decoder_outputs:
+            chars = [self.data_loader.characters[i] for i in word]
+            out = "".join(chars)
+            out_words.append(out)
+        return out_words
+
+def load_data(dictfile, flist, split=0.9):
     # Frequency list
-    df = pandas.read_csv("flist.tsv", sep="\t", header=0)
-    total = sum(df["Frekwencja"])
-    min_freq = 20
-    fdict = {a:b for a,b in zip(df["Lemat"]+"\t"+df["Część mowy"], df["Frekwencja"])}
+    df = pandas.read_csv(flist, sep="\t", header=None)
+    df.columns = ["lemma", "pos", "frequency"]
+    total = sum(df["frequency"])
+    min_freq = 15 
+    fdict = {a:b for a,b in zip(df["lemma"]+"\t"+df["pos"], df["frequency"])}
     fdict
 
     #simplifying fdict
@@ -156,10 +161,8 @@ def load_data(split=0.9):
             simplified_fdict[simplified_key] = val
 
     # Dictionary data
-    FILE_NAME = "sgjp-20210411.tab"
-    with open(FILE_NAME) as f:
-      data = f.read()
-    _, text = data.split("</COPYRIGHT>\n")
+    with open(dictfile) as f:
+      text = f.read()
     lines = text.split("\n")[:-1]
 
     lemma_to_lines = {}
@@ -194,49 +197,57 @@ def load_data(split=0.9):
     return lines, lemma_to_lines, train_keys, dev_keys, test_keys, \
            train_freq_dist, dev_freq_dist, test_freq_dist
 
+
 BATCH_SIZE = 512
-NUM_CHARS = len(CHARACTERS)
 EMBEDDING_DIM = 42#50
 ENCODER_WIDTH = 70#50#100
 DECODER_DIM = 140#100
-TAG_DIM = len(ALL_FEATS)
 TEACHER_FORCING_RATIO = 0.5
+EPOCHS = 5
+num_train_batches = 3000#15000
+num_dev_batches = 200#500
+
 
 learning_rate=0.0002
 decoder_learning_ratio = 5.0
 
 if __name__ == "__main__":
+    lower_case = True
+    ###
+    dictfile = "russian_flexer/ru_dict.tab"
+    flist = "russian_flexer/ru_freq.tsv"
+    morphology_file = "russian_flexer/ru_morph.json"
+    with open(morphology_file) as f:
+        morphology = json.load(f)
+    data_loader = DataLoader(morphology, lower_case)
+    trainer = Trainer(data_loader)
+    ###
+
     random.seed(42)
     lines, lemma_to_lines, train_keys, dev_keys, test_keys, train_freq_dist, \
-    dev_freq_dist, test_freq_dist = load_data()
+    dev_freq_dist, test_freq_dist = load_data(dictfile, flist)
 
-    encoder = Encoder(NUM_CHARS, EMBEDDING_DIM, ENCODER_WIDTH)
-    decoder = Decoder(NUM_CHARS, EMBEDDING_DIM, TAG_DIM, DECODER_DIM)
+    encoder = Encoder(len(data_loader.characters), EMBEDDING_DIM, ENCODER_WIDTH)
+    decoder = Decoder(len(data_loader.characters), EMBEDDING_DIM, len(data_loader.all_feats), DECODER_DIM)
     encoder_optimizer = optim.Adam(encoder.parameters(), lr=learning_rate)
     decoder_optimizer = optim.Adam(decoder.parameters(), lr=learning_rate * decoder_learning_ratio)
 
-
-    EPOCHS = 5
-    num_train_batches = 15000
-    num_dev_batches = 500
     last_acc = 0
-
-
     for epoch in range(EPOCHS):
       print(f"epoch no {epoch+1}")
       epoch_loss = 0
       for n in tqdm(range(num_train_batches)):
-        (in_char_tensors, in_mask), (out_char_tensors, out_mask), tag_tensors = sample_batch(train_keys, train_freq_dist, lines, lemma_to_lines, BATCH_SIZE)
-        loss = train_on_batch(in_char_tensors, in_mask, out_char_tensors, out_mask, tag_tensors, encoder, decoder,
+        (in_char_tensors, in_mask), (out_char_tensors, out_mask), tag_tensors = data_loader.sample_batch(train_keys, train_freq_dist, lines, lemma_to_lines, BATCH_SIZE)
+        loss = trainer.train_on_batch(in_char_tensors, in_mask, out_char_tensors, out_mask, tag_tensors, encoder, decoder,
                          encoder_optimizer, decoder_optimizer)
         epoch_loss += loss
       print(f"\ttrain loss: {epoch_loss:.2f}")
       correct, total = 0, 0
       dev_epoch_loss = 0
       for n in range(num_dev_batches):
-        (in_char_tensors, in_mask), (out_char_tensors, out_mask), tag_tensors = sample_batch(dev_keys, dev_freq_dist, lines, lemma_to_lines, BATCH_SIZE)
-        dev_loss, decoder_outputs = test_on_batch(in_char_tensors, in_mask, out_char_tensors, out_mask, tag_tensors, encoder, decoder)
-        batch_correct, batch_total = accuracy(out_char_tensors, decoder_outputs)
+        (in_char_tensors, in_mask), (out_char_tensors, out_mask), tag_tensors = data_loader.sample_batch(dev_keys, dev_freq_dist, lines, lemma_to_lines, BATCH_SIZE)
+        dev_loss, decoder_outputs = trainer.test_on_batch(in_char_tensors, in_mask, out_char_tensors, out_mask, tag_tensors, encoder, decoder)
+        batch_correct, batch_total = trainer.accuracy(out_char_tensors, decoder_outputs)
         correct += batch_correct
         total += batch_total
         dev_epoch_loss += dev_loss
@@ -256,9 +267,9 @@ if __name__ == "__main__":
     num_test_batches = 500
     print(len(test_keys), len(test_freq_dist))
     for n in range(num_test_batches):
-        (in_char_tensors, in_mask), (out_char_tensors, out_mask), tag_tensors = sample_batch(test_keys, test_freq_dist, lines, lemma_to_lines, BATCH_SIZE)
-        test_loss, decoder_outputs = test_on_batch(in_char_tensors, in_mask, out_char_tensors, out_mask, tag_tensors, encoder, decoder)
-        batch_correct, batch_total = accuracy(out_char_tensors, decoder_outputs)
+        (in_char_tensors, in_mask), (out_char_tensors, out_mask), tag_tensors = data_loader.sample_batch(test_keys, test_freq_dist, lines, lemma_to_lines, BATCH_SIZE)
+        test_loss, decoder_outputs = trainer.test_on_batch(in_char_tensors, in_mask, out_char_tensors, out_mask, tag_tensors, encoder, decoder)
+        batch_correct, batch_total = trainer.accuracy(out_char_tensors, decoder_outputs)
         correct += batch_correct
         total += batch_total
         test_epoch_loss += test_loss
@@ -267,8 +278,6 @@ if __name__ == "__main__":
     print(f"test accuracy: {acc:.2f}%")
 
 
-    #torch.save(encoder, "encoder.mdl")
-    #torch.save(decoder, "decoder.mdl")
     """
     # umlautung
     # Nie levenshtein i profile, tylko feature set i symmetric difference
@@ -293,7 +302,6 @@ if __name__ == "__main__":
     # czy hidden to ostatni stan pomijając padding?
     # w paperze nie nadpisują informacji z enkodera (jest zawsze konkatenowanaa), ale to nie jest standard jak sami przyznają
     # lematyzację można przecież zrobić dodając przykłady odwrotne!, wtedy reinfleksja też powinna być możliwa
-    # Unimorph
     # statystyki infiksacji/sufiksacji itd
     # podpróbkowanie frewkencyjne
 
