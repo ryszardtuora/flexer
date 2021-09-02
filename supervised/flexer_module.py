@@ -1,10 +1,12 @@
 import json
 import torch
 from network import Decoder, Encoder
+from neuro_flexer import NeuroFlexer
+from data_loader import DataLoader
 
 class Flexer(object):
   name = "flexer"
-  def __init__(self, nlp, morphology_file, inflection_dict, inflection_mode):
+  def __init__(self, nlp, morphology_file, inflection_dict, encoder_model, decoder_model, inflection_mode):
     self.nlp = nlp # this object should return a list of Token objects
     with open(morphology_file) as f:
       data = json.load(f)
@@ -14,73 +16,40 @@ class Flexer(object):
     self.accomodation_rules = data["ACCOMODATION_RULES"] # A deprel -> agreement attrs dict
     self.inflection_dict = inflection_dict
     self.inflexible_pos = data["INFLEXIBLE_POS"]
-    self.characters = data["CHARACTERS"]
-
+    self.disallowed_feats = data["DISALLOWED_FEATS"]
 
     if inflection_mode == "DICT":
         self.inflection_mode = "DICT"
 
     elif inflection_mode == "NEURO":
         self.inflection_mode = "NEURO"
-        num_chars = len(data["CHARACTERS"])
         embedding_dim = 42
         encoder_width = 70
         tag_dim = len(data["VAL2ATTR"])
         decoder_dim = 140
-        self.inflection_encoder = Encoder(num_chars, EMBEDDING_DIM, ENCODER_WIDTH)
-        self.inflection_encoder.load_state_dict(torch.load("encoder.mdl"))
-        self.inflection_decoder = Decoder(num_chars, EMBEDDING_DIM, TAG_DIM, DECODER_DIM)
-        self.inflection_decoder.load_state_dict(torch.load("decoder.mdl"))
-        self.inflection_encoder.eval()
-        self.inflection_decoder.eval()
 
+        morphology = data
+        data_loader = DataLoader(morphology, lower_case=True)
+        num_chars = len(data_loader.characters)
 
-  def tag_distance(self, taglist1, taglist2):
-      distance = len(set(taglist1).symmetric_difference(set(taglist2)))
-      return distance
+        encoder = Encoder(num_chars, embedding_dim, encoder_width)
+        encoder.load_state_dict(torch.load(encoder_model))
+        decoder = Decoder(num_chars, embedding_dim, tag_dim, decoder_dim)
+        decoder.load_state_dict(torch.load(decoder_model))
 
-  def neural_process_word(self, in_char_tensor, in_mask, tag_tensor):
-    with torch.no_grad():
-      in_lens = in_mask.sum(axis=1)
-      encoder_outputs, encoder_hidden = self.inflection_encoder(in_char_tensor, in_lens)
-      prev_char = torch.LongTensor([self.characters.index("START") for _ in range(2)])
-      decoder_hidden = encoder_hidden
-      decoder_cell = torch.zeros(decoder_hidden.shape)
-      in_char_tensor = in_char_tensor.permute([1,0])
-      top_indices = []
-      continuation = True
-      t = 0
-      while continuation:
-        if t < len(in_char_tensor):
-          lemma_char = in_char_tensor[t]
-        else:
-          lemma_char = torch.LongTensor([self.characters.index("END") for _ in range(2)])
-        decoder_output, _, decoder_hidden, decoder_cell = self.inflection_decoder(
-          prev_char, lemma_char, decoder_hidden, decoder_cell, tag_tensor
-        )
-        _, topi = decoder_output.topk(1)
-        continuation = topi[0].item() != self.characters.index("END")
-        prev_char = torch.LongTensor([[topi[i][0] for i in range(2)]]).squeeze()
-
-        top_indices.append(topi)
-        t+=1
-    decoder_outputs = torch.cat(top_indices, axis=1)
-    return decoder_outputs
+        encoder.eval()
+        decoder.eval()
+        self.neuro_flexer = NeuroFlexer(data_loader, encoder, decoder)
 
   def neural_flex(self, lemma, tag, target_pattern):
     split_target_pattern = target_pattern.split(":")
-    char_tensor, in_mask = word_to_tensor(lemma)
     attr_to_val = {self.val2attr[val]:val for val in tag.split(":")}
+
     for val in target_pattern.split(":"):
         attr_to_val[self.val2attr[val]] = val
-    if attr_to_val["Part of Speech"] in self.inflexible_pos: 
-        return lemma
     full_tag = ":".join(attr_to_val.values())
-    tag_tensor = tag_to_tensor(full_tag)
-    out = self.neural_process_word(char_tensor, in_mask, tag_tensor)
-    word = out[0]
-    chars = [self.characters[i] for i in word if CHARACTERS[i]!="END"]
-    inflected = "".join(chars)
+    inflected = self.neuro_flexer.neural_process_word(lemma, full_tag)
+
     return inflected
 
   def dict_flex(self, lemma, current_tag, target_pattern):
@@ -89,21 +58,30 @@ class Flexer(object):
       split_tag = full_tag.split(":")
       return split_tag
 
+    def tag_distance(taglist1, taglist2):
+      distance = len(set(taglist1).symmetric_difference(set(taglist2)))
+      return distance
+
+    def short_distance(taglist1, taglist2):
+      distance = len(set(taglist1).difference(set(taglist2)))
+      return distance
+
     split_current_tag = current_tag.split(":")
     split_target_pattern = target_pattern.split(":")
     generation = self.inflection_dict.generate(lemma)
-    print(generation)
     ## we select only those generated forms, which satisfy the required pattern
+
     satisfactory = [g for g in generation if all([f in gen_to_tag(g) for f in split_target_pattern])]
     if not satisfactory:
       return None# TODO może tutaj zwracać jednak najbliższą levenshteinem do DOCELOWEGO, albo inną miarą dystansu do sumy?
     else:
       for entry in satisfactory:
-          entry["score"] = self.tag_distance(split_current_tag, gen_to_tag(entry))
+          entry["score"] = tag_distance(split_current_tag, gen_to_tag(entry))
       srt = sorted(satisfactory, key=lambda g:g["score"])
-      #srt = sorted(satisfactory, key=lambda g:self.tag_distance(split_current_tag, gen_to_tag(g)))
+      #srt = sorted(satisfactory, key=lambda g:tag_distance(split_current_tag, gen_to_tag(g)))
       # we choose the form most levenshtein similar to our initial tag
       inflected = srt[0]["form"]
+  
     return inflected
 
   def get_case_fun(self, token_string):
@@ -125,17 +103,22 @@ class Flexer(object):
     if target_pattern in ["", None]:
       return token.orth
 
+    target_pattern = ":".join([f for f in target_pattern.split(":") if f not in self.disallowed_feats])
+
     token_string = token.orth
     case_fun = self.get_case_fun(token_string)
     lemma = token.lemma
 
     pos_tag = token.pos_tag
+    if pos_tag in self.inflexible_pos:
+        return lemma
+
     feats = token.feats
     full_tag = pos_tag
     if feats != "":
-      full_tag += ":" + feats
+      cleaned_feats = [f for f in feats.split(":") if f not in self.disallowed_feats] 
+      full_tag = ":".join([pos_tag] + cleaned_feats)
 
-    #split_tag = full_tag.split(":")
     if self.inflection_mode == "DICT":
       inflected = self.dict_flex(lemma, full_tag, target_pattern)
       if inflected is None:
@@ -216,9 +199,13 @@ class Flexer(object):
     for child in children_to_lemmatize:
       child_deprel = child.deprel
       if child_deprel in self.accomodation_rules:
-        lemmatized_subtree = self.flex_subtree(child, tokens, target_pattern)# TODO shouldnt this take into account only the attributes which are to be inflected given a particular deprel?
+          accomodable_attrs = self.accomodation_rules[child_deprel]
+          feats = [f for f in target_pattern.split(":") if f in self.val2attr] # limiting to supported features
+          accomodable_feats = [f for f in feats if self.val2attr[f] in accomodable_attrs]
+          child_pattern = ":".join(accomodable_feats)
+          lemmatized_subtree = self.flex_subtree(child, tokens, child_pattern)# TODO shouldnt this take into account only the attributes which are to be inflected given a particular deprel?
       else:
-        lemmatized_subtree = {tok.ind: tok.orth + tok.whitespace for tok in self.get_subtree(child, tokens)}
+          lemmatized_subtree = {tok.ind: tok.orth + tok.whitespace for tok in self.get_subtree(child, tokens)}
       ind_to_lemmatized.update(lemmatized_subtree)
     return ind_to_lemmatized
 

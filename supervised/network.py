@@ -36,6 +36,8 @@ class Decoder(nn.Module):
         recurrent_out, (hidden, cell) = self.recurrent(concatenated, (last_hidden, last_cell))
         recurrent_out = recurrent_out.squeeze()
         classifier_out = self.classifier(recurrent_out)
+        if len(classifier_out.shape) < 2:
+            classifier_out = classifier_out.unsqueeze(0)
         soft_out = self.softmax(classifier_out)
         return soft_out, recurrent_out, hidden, cell
 

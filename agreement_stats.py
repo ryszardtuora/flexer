@@ -104,23 +104,4 @@ with open("rules_induced.json", "w") as f:
   json.dump(rules, f, indent=2)
 
 
-rl = {"amod": ["number", "case", "gender"],
-                               "amod:flat": ['number', 'gender', 'case'],
-                               "acl": ["number", "case", "gender"],
-                               "appos": ["number", "case"],
-                               "aux": ['number', 'gender', 'aspect'],
-                               "aux:clitic": ['number'],
-                               "aux:pass": ['number'],
-                               "cop": ['number'],
-                               "det:numgov": ["gender"], 
-                               "det": ["number", "case", "gender"], 
-                               "det:nummod": ["number", "case", "gender"], 
-                               "det:poss": ["number", "case", "gender"],
-                               "conj": ['case', "number", 'collectivity', 'degree', 'negation'],
-                               "nummod": ["case"],
-#                               "nummod:gov": ['number'], 
-                               "nsubj:pass": ['number'],
-                               "fixed": ["case"],
-                               "flat": ['number', 'case'],
 
-                              }
