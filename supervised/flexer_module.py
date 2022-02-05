@@ -14,6 +14,10 @@ class Flexer(object):
     self.val2attr = data["VAL2ATTR"]
     self.governing_deprels = data["GOVERNING_DEPRELS"] # a list of deprels with inverted dependency structure (i.e. governing children)
     self.accomodation_rules = data["ACCOMODATION_RULES"] # A deprel -> agreement attrs dict
+    if "ADMISSIBLE_COMBINATIONS" in data:
+      self.admissible_combinations = data["ADMISSIBLE_COMBINATIONS"]
+    else:
+      self.admissible_combinations = None
     self.inflection_dict = inflection_dict
     self.inflexible_pos = data["INFLEXIBLE_POS"]
     self.disallowed_feats = data["DISALLOWED_FEATS"]
@@ -48,19 +52,23 @@ class Flexer(object):
     for val in target_pattern.split(":"):
         attr_to_val[self.val2attr[val]] = val
     full_tag = ":".join(attr_to_val.values())
+    if self.admissible_combinations:
+        split_full_tag = full_tag.split(":") 
+        ranking = sorted(self.admissible_combinations, key=lambda a: self.tag_distance(a.split(":"), split_full_tag))
+        full_tag = ranking[0]
     inflected = self.neuro_flexer.neural_process_word(lemma, full_tag)
 
     return inflected
+
+  def tag_distance(self, taglist1, taglist2):
+    distance = len(set(taglist1).symmetric_difference(set(taglist2)))
+    return distance
 
   def dict_flex(self, lemma, current_tag, target_pattern):
     def gen_to_tag(gen):
       full_tag = gen["full_tag"]
       split_tag = full_tag.split(":")
       return split_tag
-
-    def tag_distance(taglist1, taglist2):
-      distance = len(set(taglist1).symmetric_difference(set(taglist2)))
-      return distance
 
     def short_distance(taglist1, taglist2):
       distance = len(set(taglist1).difference(set(taglist2)))
@@ -69,18 +77,17 @@ class Flexer(object):
     split_current_tag = current_tag.split(":")
     split_target_pattern = target_pattern.split(":")
     generation = self.inflection_dict.generate(lemma)
-    ## we select only those generated forms, which satisfy the required pattern
 
     satisfactory = [g for g in generation if all([f in gen_to_tag(g) for f in split_target_pattern])]
     if not satisfactory:
-      return None# TODO może tutaj zwracać jednak najbliższą levenshteinem do DOCELOWEGO, albo inną miarą dystansu do sumy?
+      return None
     else:
       for entry in satisfactory:
-          entry["score"] = tag_distance(split_current_tag, gen_to_tag(entry))
+          entry["score"] = self.tag_distance(split_current_tag, gen_to_tag(entry))
       srt = sorted(satisfactory, key=lambda g:g["score"])
-      #srt = sorted(satisfactory, key=lambda g:tag_distance(split_current_tag, gen_to_tag(g)))
       # we choose the form most levenshtein similar to our initial tag
       inflected = srt[0]["form"]
+
   
     return inflected
 
@@ -164,7 +171,18 @@ class Flexer(object):
         accomodable_attrs = self.accomodation_rules[child_deprel]
       else:
         accomodable_attrs = []
-      feats = [f for f in target_pattern.split(":") if f in self.val2attr] # limiting to supported features
+      # we're not limiting ourselves to target pattern, but rather propagate all the features of the new tag, which go through the rule
+      head_feats = {self.val2attr[v]:v for v in head.feats.split(":") if v in self.val2attr}
+      #print("head_feats", head_feats)
+      target_feats = {self.val2attr[v]:v for v in target_pattern.split(":") if v in self.val2attr}
+      #print("target_feats", target_feats)
+      head_feats.update(target_feats)
+      #print("target_profile", head_feats)
+      target_child_feats = list(head_feats.values())
+      feats = target_child_feats
+
+      #
+      #feats = [f for f in target_pattern.split(":") if f in self.val2attr] # limiting to supported features
       accomodable_feats = [f for f in feats if self.val2attr[f] in accomodable_attrs]
       child_pattern = ":".join(accomodable_feats)
       inflected_subtree = self.flex_subtree(child, tokens, child_pattern)

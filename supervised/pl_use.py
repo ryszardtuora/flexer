@@ -18,3 +18,11 @@ toks = nlp(text)
 
 flexed = flexer.flex_phrase(toks, toks, "gen:pl")
 print(flexed)
+
+text = "zbazowana alternatywka"
+toks = nlp(text)
+print(flexer.flex_phrase(toks, toks, "dat"))
+
+text = "niebiesko-zielony człowiek"
+toks = nlp(text)
+print(flexer.flex_phrase(toks, toks, "inst:pl"))

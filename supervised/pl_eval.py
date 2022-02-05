@@ -80,7 +80,7 @@ def evaluate_lemmatizer(data):
   return output
 
 data = load_data("polish_flexer/pl_mwe.tab")
-test_ex = data
+test_ex = data[:5000]
 print(len(data))
 
 
@@ -88,6 +88,20 @@ morphology_file = "polish_flexer/pl_morph.json"
 nlp = ComboWrapper("polish-herbert-large", use_translation=False)
 inflection_dict = MorfWrapper()
 #inflection_dict = PseudoMorph("polish_flexer/pl_dict.tab")
+
+infl_mode = "DICT"
+print(infl_mode)
+flexer = Flexer(nlp, morphology_file, inflection_dict, "pl_encoder.mdl", "pl_decoder.mdl", infl_mode)
+flex_output = evaluate_flexer(test_ex)
+flex_df = DataFrame(flex_output)
+flex_df.to_csv("pl_flex_out_dict.tsv", sep="\t")
+print("Inflection: ", sum(flex_df["permuted"])/len(flex_df) * 100)
+
+lem_output = evaluate_lemmatizer(test_ex)
+lem_df = DataFrame(lem_output)
+lem_df.to_csv("pl_lem_out_dict.tsv", sep="\t")
+print("Lemmatization: ", sum(lem_df["permuted"])/len(lem_df) * 100)
+print("Lemmatization baseline:", sum(lem_df["concat_permuted"])/len(lem_df) * 100)
 
 
 
@@ -107,16 +121,3 @@ print("Lemmatization: ", sum(lem_df["permuted"])/len(lem_df) * 100)
 print("Lemmatization baseline:", sum(lem_df["concat_permuted"])/len(lem_df) * 100)
 
 
-infl_mode = "DICT"
-print(infl_mode)
-flexer = Flexer(nlp, morphology_file, inflection_dict, "pl_encoder.mdl", "pl_decoder.mdl", infl_mode)
-flex_output = evaluate_flexer(test_ex)
-flex_df = DataFrame(flex_output)
-flex_df.to_csv("pl_flex_out_dict.tsv", sep="\t")
-print("Inflection: ", sum(flex_df["permuted"])/len(flex_df) * 100)
-
-lem_output = evaluate_lemmatizer(test_ex)
-lem_df = DataFrame(lem_output)
-lem_df.to_csv("pl_lem_out_dict.tsv", sep="\t")
-print("Lemmatization: ", sum(lem_df["permuted"])/len(lem_df) * 100)
-print("Lemmatization baseline:", sum(lem_df["concat_permuted"])/len(lem_df) * 100)
