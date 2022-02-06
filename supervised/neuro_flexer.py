@@ -73,7 +73,7 @@ class NeuroFlexer():
         return loss.item()
 
     def test_on_batch(self, in_char_tensors, in_mask, out_char_tensors, out_mask, tag_tensors):
-        in_char_tensors, in_mask, out_char_tensors, out_mask, tag_tensor = self.move_to_device(in_char_tensors, in_mask, out_char_tensors, out_mask, tag_tensors)
+        in_char_tensors, in_mask, out_char_tensors, out_mask, tag_tensors = self.move_to_device(in_char_tensors, in_mask, out_char_tensors, out_mask, tag_tensors)
         _ = self.encoder.eval()
         _ = self.decoder.eval()
         loss = 0
