@@ -24,6 +24,11 @@ NUM_DEV_BATCHES = 500
 NUM_TEST_BATCHES = 500
 LEARNING_RATE=0.0002
 DECODER_LEARNING_RATIO = 5.0
+USE_ATTENTION=True
+if torch.cuda.is_available():
+    device = torch.device("cuda:0")
+else:
+    device = torch.device("cpu")
 
 
 def accuracy(data_loader, out, target):
@@ -107,8 +112,8 @@ if __name__ == "__main__":
         morphology = json.load(f)
     data_loader = DataLoader(morphology, lower_case)
     encoder = Encoder(len(data_loader.characters), EMBEDDING_DIM, ENCODER_WIDTH)
-    decoder = Decoder(len(data_loader.characters), EMBEDDING_DIM, len(data_loader.all_feats), ENCODER_WIDTH*2, DECODER_DIM)
-    neuro = NeuroFlexer(data_loader, encoder, decoder)
+    decoder = Decoder(len(data_loader.characters), EMBEDDING_DIM, len(data_loader.all_feats), ENCODER_WIDTH*2, DECODER_DIM, use_attention=USE_ATTENTION)
+    neuro = NeuroFlexer(data_loader, encoder, decoder, device)
 
     encoder_optimizer = optim.Adam(encoder.parameters(), lr=LEARNING_RATE)
     decoder_optimizer = optim.Adam(decoder.parameters(), lr=LEARNING_RATE * DECODER_LEARNING_RATIO)
