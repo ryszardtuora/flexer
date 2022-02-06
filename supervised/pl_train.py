@@ -15,7 +15,11 @@ ENCODER_WIDTH = 70#50#100
 DECODER_DIM = 140#100
 TEACHER_FORCING_RATIO = 0.5
 EPOCHS = 5
-NUM_TRAIN_BATCHES = 10000
+DRY_RUN = True
+if DRY_RUN:
+    NUM_TRAIN_BATCHES = 500
+else:
+    NUM_TRAIN_BATCHES = 10000
 NUM_DEV_BATCHES = 500
 NUM_TEST_BATCHES = 500
 LEARNING_RATE=0.0002
@@ -103,7 +107,7 @@ if __name__ == "__main__":
         morphology = json.load(f)
     data_loader = DataLoader(morphology, lower_case)
     encoder = Encoder(len(data_loader.characters), EMBEDDING_DIM, ENCODER_WIDTH)
-    decoder = Decoder(len(data_loader.characters), EMBEDDING_DIM, len(data_loader.all_feats), DECODER_DIM)
+    decoder = Decoder(len(data_loader.characters), EMBEDDING_DIM, len(data_loader.all_feats), ENCODER_WIDTH*2, DECODER_DIM)
     neuro = NeuroFlexer(data_loader, encoder, decoder)
 
     encoder_optimizer = optim.Adam(encoder.parameters(), lr=LEARNING_RATE)
@@ -134,13 +138,15 @@ if __name__ == "__main__":
       acc = correct/total * 100
       if acc > last_acc:
           last_acc = acc
-          torch.save(encoder.state_dict(), "pl_encoder.mdl")
-          torch.save(decoder.state_dict(), "pl_decoder.mdl")
+          if not DRY_RUN:
+              torch.save(encoder.state_dict(), "pl_encoder.mdl")
+              torch.save(decoder.state_dict(), "pl_decoder.mdl")
       print(f"\tdev loss: {dev_epoch_loss:.2f}")
       print(f"\t dev accuracy: {acc:.2f}%")
 
-    encoder.load_state_dict(torch.load("pl_encoder.mdl"))#
-    decoder.load_state_dict(torch.load("pl_decoder.mdl"))
+    if not DRY_RUN:
+        encoder.load_state_dict(torch.load("pl_encoder.mdl"))#
+        decoder.load_state_dict(torch.load("pl_decoder.mdl"))
 
     correct, total = 0, 0
     test_epoch_loss = 0

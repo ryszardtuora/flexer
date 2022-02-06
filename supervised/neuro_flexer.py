@@ -22,8 +22,9 @@ class NeuroFlexer():
         encoder_outputs, encoder_hidden = self.encoder(in_char_tensors, in_lens)
         prev_char = torch.LongTensor([self.data_loader.characters.index("START") for _ in range(batch_size)])
 
-        decoder_hidden = encoder_hidden
+        decoder_hidden = torch.zeros(encoder_hidden.shape)
         decoder_cell = torch.zeros(decoder_hidden.shape)
+        encoder_hidden = encoder_hidden.squeeze()
 
         out_char_tensors = out_char_tensors.permute([1,0])
         out_mask = out_mask.permute([1,0])
@@ -38,7 +39,7 @@ class NeuroFlexer():
                 else:
                     lemma_char = torch.LongTensor([self.data_loader.characters.index("END") for _ in range(batch_size)])
                 decoder_output, _, decoder_hidden, decoder_cell = self.decoder(
-                    prev_char, lemma_char, decoder_hidden, decoder_cell, tag_tensors
+                    prev_char, lemma_char, encoder_hidden, decoder_hidden, decoder_cell, tag_tensors
                 )
                 prev_char = out_char_tensors[t]
                 mask_loss = maskNLLLoss(decoder_output, out_char_tensors[t], out_mask[t].bool())
@@ -50,7 +51,7 @@ class NeuroFlexer():
                 else:
                     lemma_char = torch.LongTensor([self.data_loader.characters.index("END") for _ in range(batch_size)])
                 decoder_output, _, decoder_hidden, decoder_cell = self.decoder(
-                    prev_char, lemma_char, decoder_hidden, decoder_cell, tag_tensors
+                    prev_char, lemma_char, encoder_hidden, decoder_hidden, decoder_cell, tag_tensors
                 )
                 _, topi = decoder_output.topk(1)
                 prev_char = torch.LongTensor([[topi[i][0] for i in range(batch_size)]]).squeeze()
@@ -75,8 +76,11 @@ class NeuroFlexer():
             out_lens = out_mask.sum(axis=1)
             encoder_outputs, encoder_hidden = self.encoder(in_char_tensors, in_lens)
             prev_char = torch.LongTensor([self.data_loader.characters.index("START") for _ in range(batch_size)])
-            decoder_hidden = encoder_hidden
+
+            decoder_hidden = torch.zeros(encoder_hidden.shape)
             decoder_cell = torch.zeros(decoder_hidden.shape)
+            encoder_hidden = encoder_hidden.squeeze()
+
             out_char_tensors = out_char_tensors.permute([1,0])
             out_mask = out_mask.permute([1,0])
             in_char_tensors = in_char_tensors.permute([1,0])
@@ -88,7 +92,7 @@ class NeuroFlexer():
                 else:
                     lemma_char = torch.LongTensor([self.data_loader.characters.index("END") for _ in range(batch_size)])
                 decoder_output, _, decoder_hidden, decoder_cell = self.decoder(
-                    prev_char, lemma_char, decoder_hidden, decoder_cell, tag_tensors
+                    prev_char, lemma_char, encoder_hidden, decoder_hidden, decoder_cell, tag_tensors
                 )
                 _, topi = decoder_output.topk(1)
                 prev_char = torch.LongTensor([[topi[i][0] for i in range(batch_size)]]).squeeze()
@@ -107,8 +111,11 @@ class NeuroFlexer():
             in_lens = in_mask.sum(axis=1)
             encoder_outputs, encoder_hidden = self.encoder(in_char_tensor, in_lens)
             prev_char = torch.LongTensor([self.data_loader.characters.index("START")])
-            decoder_hidden = encoder_hidden
+
+            decoder_hidden = torch.zeros(encoder_hidden.shape)
             decoder_cell = torch.zeros(decoder_hidden.shape)
+            encoder_hidden = encoder_hidden.squeeze()
+
             in_char_tensor = in_char_tensor.permute([1,0])
             top_indices = []
             continuation = True
@@ -119,7 +126,7 @@ class NeuroFlexer():
                 else:
                     lemma_char = torch.LongTensor([self.data_loader.characters.index("END")])
                 decoder_output, _, decoder_hidden, decoder_cell = self.decoder(
-                    prev_char, lemma_char, decoder_hidden, decoder_cell, tag_tensor
+                    prev_char, lemma_char, encoder_hidden, decoder_hidden, decoder_cell, tag_tensor
                 )
                 _, topi = decoder_output.topk(1)
                 continuation = topi[0].item() != self.data_loader.characters.index("END")

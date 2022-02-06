@@ -20,18 +20,18 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
-    def __init__(self, char_num, embedding_dim, tag_dim, decoder_dim):
+    def __init__(self, char_num, embedding_dim, tag_dim, encoder_dim, decoder_dim):
         super(Decoder, self).__init__()
         self.embedding = nn.Embedding(char_num, embedding_dim)
-        self.recurrent = nn.LSTM(2*embedding_dim + tag_dim, decoder_dim)
+        self.recurrent = nn.LSTM(2*embedding_dim + tag_dim + encoder_dim, decoder_dim)
         self.classifier = nn.Linear(decoder_dim, char_num)
         self.softmax = nn.Softmax(dim=1)
         #self.dropout = nn.Dropout(0.5)
 
-    def forward(self, prev_char_vector, lemma_char_vector, last_hidden, last_cell, tag_vector):
+    def forward(self, prev_char_vector, lemma_char_vector, encoder_hidden, last_hidden, last_cell, tag_vector):
         embedded_prev_char = self.embedding(prev_char_vector)
         embedded_lemma_char = self.embedding(lemma_char_vector)
-        concatenated = cat([embedded_lemma_char, embedded_prev_char, tag_vector], axis=1)
+        concatenated = cat([embedded_lemma_char, encoder_hidden, embedded_prev_char, tag_vector], axis=1)
         concatenated = concatenated.unsqueeze(0)
         recurrent_out, (hidden, cell) = self.recurrent(concatenated, (last_hidden, last_cell))
         recurrent_out = recurrent_out.squeeze()
