@@ -1,0 +1,408 @@
+{
+  "CHARACTERS": "оаеинтрсвлмкупдыьбяйзгчхшюжцщфёэ-ъАМСПБКОВРДЭНТГЛШФХИЗ—ЧЕЮЖУ",
+  "LOWER_CHARACTERS": "оаеинтрсвлмкупдыьбяйзгчхшюжцщфёэ-ъ—",
+  "DISALLOWED_FEATS": [],
+  "INFLEXIBLE_POS": [],
+  "ATTR2FEATS": {
+    "Animacy": [
+      "ANIM",
+      "INAN"
+    ],
+    "Aspect": [
+      "IPFV",
+      "PFV"
+    ],
+    "Case": [
+      "ACC",
+      "DAT",
+      "ESS",
+      "GEN",
+      "INS",
+      "NOM",
+      "PRT",
+      "VOC"
+    ],
+    "Comparison": [
+      "CMPR",
+      "RL"
+    ],
+    "Finiteness": [
+      "FIN",
+      "NFIN"
+    ],
+    "Gender": [
+      "FEM",
+      "MASC",
+      "NEUT"
+    ],
+    "Language-Specific Features": [
+      "LGSPEC1"
+    ],
+    "Mood": [
+      "COND",
+      "IMP",
+      "IND"
+    ],
+    "Number": [
+      "PL",
+      "SG"
+    ],
+    "Part of Speech": [
+      "ADJ",
+      "ADP",
+      "ADV",
+      "CONJ",
+      "DET",
+      "INTJ",
+      "N",
+      "NUM",
+      "PART",
+      "PRO",
+      "PROPN",
+      "V",
+      "V_CVB",
+      "V_PTCP"
+    ],
+    "Person": [
+      "1",
+      "2",
+      "3"
+    ],
+    "Polarity": [
+      "NEG"
+    ],
+    "Tense": [
+      "FUT",
+      "PRS",
+      "PST"
+    ],
+    "Valency": [
+      "REFL"
+    ],
+    "Voice": [
+      "ACT",
+      "MID",
+      "PASS"
+    ]
+  },
+  "VAL2ATTR": {
+    "ANIM": "Animacy",
+    "INAN": "Animacy",
+    "IPFV": "Aspect",
+    "PFV": "Aspect",
+    "ACC": "Case",
+    "DAT": "Case",
+    "ESS": "Case",
+    "GEN": "Case",
+    "INS": "Case",
+    "NOM": "Case",
+    "PRT": "Case",
+    "VOC": "Case",
+    "CMPR": "Comparison",
+    "RL": "Comparison",
+    "FIN": "Finiteness",
+    "NFIN": "Finiteness",
+    "FEM": "Gender",
+    "MASC": "Gender",
+    "NEUT": "Gender",
+    "LGSPEC1": "Language-Specific Features",
+    "COND": "Mood",
+    "IMP": "Mood",
+    "IND": "Mood",
+    "PL": "Number",
+    "SG": "Number",
+    "ADJ": "Part of Speech",
+    "ADP": "Part of Speech",
+    "ADV": "Part of Speech",
+    "CONJ": "Part of Speech",
+    "DET": "Part of Speech",
+    "INTJ": "Part of Speech",
+    "N": "Part of Speech",
+    "NUM": "Part of Speech",
+    "PART": "Part of Speech",
+    "PRO": "Part of Speech",
+    "PROPN": "Part of Speech",
+    "V": "Part of Speech",
+    "V_CVB": "Part of Speech",
+    "V_PTCP": "Part of Speech",
+    "1": "Person",
+    "2": "Person",
+    "3": "Person",
+    "NEG": "Polarity",
+    "FUT": "Tense",
+    "PRS": "Tense",
+    "PST": "Tense",
+    "REFL": "Valency",
+    "ACT": "Voice",
+    "MID": "Voice",
+    "PASS": "Voice"
+  },
+  "GOVERNING_DEPRELS": [],
+  "ACCOMODATION_RULES": {
+    "acl": [
+      "Mood"
+    ],
+    "acl:relcl": [
+      "Mood",
+      "Finiteness"
+    ],
+    "advcl": [
+      "Comparison"
+    ],
+    "advmod": [
+      "Comparison",
+      "Polarity"
+    ],
+    "amod": [
+      "Animacy",
+      "Gender",
+      "Number",
+      "Case"
+    ],
+    "appos": [
+      "Tense",
+      "Mood"
+    ],
+    "aux": [
+      "Tense"
+    ],
+    "aux:pass": [
+      "Gender",
+      "Part of Speech",
+      "Number"
+    ],
+    "cc": [
+      "Animacy",
+      "Number",
+      "Case"
+    ],
+    "ccomp": [
+      "Animacy",
+      "Case"
+    ],
+    "conj": [
+      "Comparison",
+      "Mood",
+      "Finiteness",
+      "Polarity"
+    ],
+    "cop": [
+      "Animacy"
+    ],
+    "csubj": [
+      "Case",
+      "Mood"
+    ],
+    "csubj:pass": [
+      "Part of Speech",
+      "Aspect"
+    ],
+    "dep": [
+      "Finiteness"
+    ],
+    "det": [
+      "Animacy",
+      "Gender",
+      "Number",
+      "Case"
+    ],
+    "discourse": [
+      "Gender",
+      "Voice",
+      "Aspect",
+      "Finiteness"
+    ],
+    "dislocated": [
+      "Person"
+    ],
+    "expl": [
+      "Number"
+    ],
+    "fixed": [
+      "Number",
+      "Voice",
+      "Aspect",
+      "Tense",
+      "Mood",
+      "Finiteness",
+      "Polarity"
+    ],
+    "flat": [
+      "Animacy",
+      "Number",
+      "Case",
+      "Person",
+      "Aspect",
+      "Tense",
+      "Mood",
+      "Finiteness",
+      "Polarity"
+    ],
+    "flat:foreign": [
+      "Animacy",
+      "Gender",
+      "Number",
+      "Case"
+    ],
+    "flat:name": [
+      "Animacy",
+      "Gender",
+      "Part of Speech",
+      "Number",
+      "Case"
+    ],
+    "goeswith": [
+      "Animacy",
+      "Gender",
+      "Number",
+      "Case",
+      "Person",
+      "Mood"
+    ],
+    "iobj": [
+      "Voice",
+      "Aspect",
+      "Tense",
+      "Mood",
+      "Finiteness",
+      "Polarity"
+    ],
+    "nmod": [
+      "Comparison"
+    ],
+    "nsubj": [
+      "Person"
+    ],
+    "nsubj:pass": [
+      "Case"
+    ],
+    "nummod": [
+      "Number",
+      "Case"
+    ],
+    "nummod:gov": [
+      "Animacy",
+      "Gender"
+    ],
+    "obj": [
+      "Finiteness"
+    ],
+    "obl": [
+      "Comparison"
+    ],
+    "reparandum": [
+      "Animacy",
+      "Gender",
+      "Person",
+      "Voice",
+      "Aspect",
+      "Tense",
+      "Mood",
+      "Finiteness"
+    ],
+    "vocative": [
+      "Finiteness"
+    ]
+  },
+   "ADMISSIBLE_COMBINATIONS":   ["ADJ:ACC:ANIM:PL",
+				"ADJ:ACC:FEM:SG",
+				"ADJ:ACC:INAN:PL",
+				"ADJ:ACC:NEUT:SG",
+				"ADJ:ANIM:ACC:MASC:SG",
+				"ADJ:DAT:FEM:SG",
+				"ADJ:DAT:MASC:SG",
+				"ADJ:DAT:NEUT:SG",
+				"ADJ:DAT:PL",
+				"ADJ:ESS:FEM:SG",
+				"ADJ:ESS:MASC:SG",
+				"ADJ:ESS:NEUT:SG",
+				"ADJ:ESS:PL",
+				"ADJ:FEM:SG:LGSPEC1",
+				"ADJ:GEN:FEM:SG",
+				"ADJ:GEN:MASC:SG",
+				"ADJ:GEN:NEUT:SG",
+				"ADJ:GEN:PL",
+				"ADJ:INAN:ACC:MASC:SG",
+				"ADJ:INS:FEM:SG",
+				"ADJ:INS:MASC:SG",
+				"ADJ:INS:NEUT:SG",
+				"ADJ:INS:PL",
+				"ADJ:MASC:SG:LGSPEC1",
+				"ADJ:NEUT:SG:LGSPEC1",
+				"ADJ:NOM:FEM:SG",
+				"ADJ:NOM:MASC:SG",
+				"ADJ:NOM:NEUT:SG",
+				"ADJ:NOM:PL",
+				"ADJ:PL:LGSPEC1",
+				"N:ACC:ANIM:PL",
+				"N:ACC:ANIM:SG",
+				"N:ACC:INAN:PL",
+				"N:ACC:INAN:SG",
+				"N:ACC:PL",
+				"N:ACC:SG",
+				"N:DAT:PL",
+				"N:DAT:SG",
+				"N:ESS:PL",
+				"N:ESS:SG",
+				"N:GEN:PL",
+				"N:GEN:SG",
+				"N:INS:PL",
+				"N:INS:SG",
+				"N:NOM:PL",
+				"N:NOM:SG",
+				"V_CVB:PRS",
+				"V_CVB:PST",
+				"V:FUT:1:PL",
+				"V:FUT:1:SG",
+				"V:FUT:2:PL",
+				"V:FUT:2:SG",
+				"V:FUT:3:PL",
+				"V:FUT:3:SG",
+				"V:IMP:2:PL",
+				"V:IMP:2:SG",
+				"V:NFIN",
+				"V:PRS:1:PL",
+				"V:PRS:1:SG",
+				"V:PRS:2:PL",
+				"V:PRS:2:SG",
+				"V:PRS:3:PL",
+				"V:PRS:3:SG",
+				"V:PST:PL",
+				"V:PST:SG:FEM",
+				"V:PST:SG:MASC",
+				"V:PST:SG:NEUT",
+				"V_PTCP:ACC:ANIM:PL",
+				"V_PTCP:ACC:FEM:SG",
+				"V_PTCP:ACC:INAN:PL",
+				"V_PTCP:ACC:NEUT:SG",
+				"V_PTCP:ACT:PRS",
+				"V_PTCP:ACT:PST",
+				"V_PTCP:ANIM:ACC:MASC:SG",
+				"V_PTCP:DAT:FEM:SG",
+				"V_PTCP:DAT:MASC:SG",
+				"V_PTCP:DAT:NEUT:SG",
+				"V_PTCP:DAT:PL",
+				"V_PTCP:ESS:FEM:SG",
+				"V_PTCP:ESS:MASC:SG",
+				"V_PTCP:ESS:NEUT:SG",
+				"V_PTCP:ESS:PL",
+				"V_PTCP:FEM:SG:LGSPEC1",
+				"V_PTCP:GEN:FEM:SG",
+				"V_PTCP:GEN:MASC:SG",
+				"V_PTCP:GEN:NEUT:SG",
+				"V_PTCP:GEN:PL",
+				"V_PTCP:INAN:ACC:MASC:SG",
+				"V_PTCP:INS:FEM:SG",
+				"V_PTCP:INS:MASC:SG",
+				"V_PTCP:INS:NEUT:SG",
+				"V_PTCP:INS:PL",
+				"V_PTCP:MASC:SG:LGSPEC1",
+				"V_PTCP:NEUT:SG:LGSPEC1",
+				"V_PTCP:NOM:FEM:SG",
+				"V_PTCP:NOM:MASC:SG",
+				"V_PTCP:NOM:NEUT:SG",
+				"V_PTCP:NOM:PL",
+				"V_PTCP:PASS:PRS",
+				"V_PTCP:PASS:PST",
+				"V_PTCP:PL:LGSPEC1"]
+}
