@@ -38,7 +38,7 @@ class Flexer(object):
 
         encoder = Encoder(num_chars, embedding_dim, encoder_width)
         encoder.load_state_dict(torch.load(encoder_model))
-        decoder = Decoder(num_chars, embedding_dim, tag_dim, decoder_dim)
+        decoder = Decoder(num_chars, embedding_dim, tag_dim, encoder_width*2, decoder_dim, use_attention=True)
         decoder.load_state_dict(torch.load(decoder_model))
 
         encoder.eval()
@@ -237,6 +237,12 @@ class Flexer(object):
     phrase = "".join([t for i, t in seq]).strip()
     return phrase
 
+  def trivial_lemmatize_phrase(self, tokens, phrase_tokens):
+    # just concatenate the lemmas
+    seq = [tok.lemma + tok.whitespace for tok in phrase_tokens]
+    phrase = "".join([t for i, t in seq]).strip()
+    return phrase
+
   def flex_phrase(self, tokens, phrase_tokens, target_pattern):
     phrase_inds = [tok.ind for tok in phrase_tokens]
     ind_to_inflected = {}
@@ -244,6 +250,12 @@ class Flexer(object):
     for independent_head in independent_subtrees:
         ind_to_inflected.update(self.flex_subtree(independent_head, tokens, target_pattern))
     seq = sorted([(i, t) for i, t in ind_to_inflected.items()])
+    phrase = "".join([t for i, t in seq]).strip()
+    return phrase
+
+  def trivial_flex_phrase(self, tokens, phrase_tokens, target_pattern):
+    # just concatenate the inflected forms
+    seq = [self.flex_token(token, target_pattern) for token in phrase_tokens]
     phrase = "".join([t for i, t in seq]).strip()
     return phrase
 

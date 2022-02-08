@@ -80,7 +80,7 @@ def evaluate_lemmatizer(data):
   return output
 
 data = load_data("polish_flexer/pl_mwe.tab")
-test_ex = data[:5000]
+test_ex = data[:2000]
 print(len(data))
 
 
@@ -91,32 +91,32 @@ inflection_dict = MorfWrapper()
 
 infl_mode = "DICT"
 print(infl_mode)
-flexer = Flexer(nlp, morphology_file, inflection_dict, "pl_encoder.mdl", "pl_decoder.mdl", infl_mode)
-flex_output = evaluate_flexer(test_ex)
-flex_df = DataFrame(flex_output)
-flex_df.to_csv("pl_flex_out_dict.tsv", sep="\t")
-print("Inflection: ", sum(flex_df["permuted"])/len(flex_df) * 100)
+#flexer = Flexer(nlp, morphology_file, inflection_dict, "pl_encoder_lemmas.mdl", "pl_decoder_lemmas.mdl", infl_mode)
+#flex_output = evaluate_flexer(test_ex)
+#flex_df = DataFrame(flex_output)
+#flex_df.to_csv("pl_flex_out_dict.tsv", sep="\t")
+#print("Inflection: ", sum(flex_df["permuted"])/len(flex_df) * 100)
 
-lem_output = evaluate_lemmatizer(test_ex)
-lem_df = DataFrame(lem_output)
-lem_df.to_csv("pl_lem_out_dict.tsv", sep="\t")
-print("Lemmatization: ", sum(lem_df["permuted"])/len(lem_df) * 100)
-print("Lemmatization baseline:", sum(lem_df["concat_permuted"])/len(lem_df) * 100)
+#lem_output = evaluate_lemmatizer(test_ex)
+#lem_df = DataFrame(lem_output)
+#lem_df.to_csv("pl_lem_out_dict.tsv", sep="\t")
+#print("Lemmatization: ", sum(lem_df["permuted"])/len(lem_df) * 100)
+#print("Lemmatization baseline:", sum(lem_df["concat_permuted"])/len(lem_df) * 100)
 
 
 
 infl_mode = "NEURO"
 print(infl_mode)
-flexer = Flexer(nlp, morphology_file, inflection_dict, "pl_encoder.mdl", "pl_decoder.mdl", infl_mode)
+flexer = Flexer(nlp, morphology_file, inflection_dict, "pl_encoder_attn.mdl", "pl_decoder_attn.mdl", infl_mode)
 
 flex_output = evaluate_flexer(test_ex)
 flex_df = DataFrame(flex_output)
-flex_df.to_csv("pl_flex_out_neuro.tsv", sep="\t")
+#flex_df.to_csv("pl_flex_out_neuro.tsv", sep="\t")
 print("Inflection: ", sum(flex_df["permuted"])/len(flex_df) * 100)
 
 lem_output = evaluate_lemmatizer(test_ex)
 lem_df = DataFrame(lem_output)
-lem_df.to_csv("pl_lem_out_neuro.tsv", sep="\t")
+#lem_df.to_csv("pl_lem_out_neuro.tsv", sep="\t")
 print("Lemmatization: ", sum(lem_df["permuted"])/len(lem_df) * 100)
 print("Lemmatization baseline:", sum(lem_df["concat_permuted"])/len(lem_df) * 100)
 

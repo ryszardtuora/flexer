@@ -26,6 +26,8 @@ class DataLoader():
         pad_token = characters.index("PAD")
         char_indices = []
         for word in words:
+            if ":" in word and word[0] != ":":
+                word = word.split(":")[0]
             if self.lower_case:
                 word = word.lower()
             chars = [c for c in word if c in characters]

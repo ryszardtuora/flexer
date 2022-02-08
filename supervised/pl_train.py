@@ -2,6 +2,7 @@ import json
 import pandas
 import numpy
 import random
+import click
 import torch
 from data_loader import DataLoader
 from network import Encoder, Decoder 
@@ -14,26 +15,17 @@ EMBEDDING_DIM = 42#50
 ENCODER_WIDTH = 70#50#100
 DECODER_DIM = 140#100
 TEACHER_FORCING_RATIO = 0.5
-EPOCHS = 5
-DRY_RUN = True
-if DRY_RUN:
-    NUM_TRAIN_BATCHES = 500
-else:
-    NUM_TRAIN_BATCHES = 10000
-NUM_DEV_BATCHES = 500
-NUM_TEST_BATCHES = 500
 LEARNING_RATE=0.0002
 DECODER_LEARNING_RATIO = 5.0
-USE_ATTENTION=True
 if torch.cuda.is_available():
     device = torch.device("cuda:0")
 else:
     device = torch.device("cpu")
 
 
-def accuracy(data_loader, out, target):
+def accuracy(data_loader, target, out):
     correct, total = 0, 0
-    for out_seq, target_seq in zip(out, target):
+    for out_seq, target_seq in zip(out.cpu(), target):
         total += 1
         for out_char, target_char in zip(out_seq, target_seq):
             if out_char != target_char:
@@ -100,19 +92,49 @@ def load_data(dictfile, flist, split=0.9):
            train_freq_dist, dev_freq_dist, test_freq_dist
 
 
+@click.command()
+@click.option("--dry", is_flag=True)
+@click.option("--attn", is_flag=True)
+@click.option("--epochs", default=3)
+@click.option("--lang", default="pl")
+def main(**kwargs):
+    epochs = kwargs["epochs"]
+    dry_run = kwargs["dry"]
+    use_attention = kwargs["attn"]
+    lang = kwargs["lang"]
 
-if __name__ == "__main__":
+    if dry_run:
+        num_train_batches = 200
+        num_dev_batches = 100
+        num_test_batches = 100
 
-    dictfile = "polish_flexer/pl_dict.tab"
-    flist = "polish_flexer/pl_freq.tsv"
-    morphology_file = "polish_flexer/pl_morph.json"
+    else:
+        if lang == "pl":
+            num_train_batches = 10000
+        elif lang == "ru":
+            num_train_batches = 800
+        num_dev_batches = 500
+        num_test_batches = 500
+
+    if lang == "pl":
+        dictfile = "polish_flexer/pl_dict.tab"
+        flist = "polish_flexer/pl_freq.tsv"
+        morphology_file = "polish_flexer/pl_morph.json"
+
+    elif lang == "ru":
+        dictfile = "russian_flexer/ru_dict.tab"
+        flist = "russian_flexer/ru_freq.tsv"
+        morphology_file = "russian_flexer/ru_morph.json"
+
+
 
     lower_case = True
     with open(morphology_file) as f:
         morphology = json.load(f)
     data_loader = DataLoader(morphology, lower_case)
     encoder = Encoder(len(data_loader.characters), EMBEDDING_DIM, ENCODER_WIDTH)
-    decoder = Decoder(len(data_loader.characters), EMBEDDING_DIM, len(data_loader.all_feats), ENCODER_WIDTH*2, DECODER_DIM, use_attention=USE_ATTENTION)
+    decoder = Decoder(len(data_loader.characters), EMBEDDING_DIM, len(data_loader.all_feats), ENCODER_WIDTH*2, DECODER_DIM, use_attention=use_attention)
+    print(f"decoder shape: {decoder.recurrent.weight_ih_l0.shape} {decoder.recurrent.weight_hh_l0.shape}")
     neuro = NeuroFlexer(data_loader, encoder, decoder, device)
 
     encoder_optimizer = optim.Adam(encoder.parameters(), lr=LEARNING_RATE)
@@ -123,17 +145,19 @@ if __name__ == "__main__":
     dev_freq_dist, test_freq_dist = load_data(dictfile, flist)
 
     last_acc = 0
-    for epoch in range(EPOCHS):
+    for epoch in range(epochs):
       print(f"epoch no {epoch+1}")
+      print("TRAIN")
       epoch_loss = 0
-      for n in tqdm(range(NUM_TRAIN_BATCHES)):
+      for n in tqdm(range(num_train_batches)):
         (in_char_tensors, in_mask), (out_char_tensors, out_mask), tag_tensors = data_loader.sample_batch(train_keys, train_freq_dist, lines, lemma_to_lines, BATCH_SIZE)
         loss = neuro.train_on_batch(in_char_tensors, in_mask, out_char_tensors, out_mask, tag_tensors, encoder_optimizer, decoder_optimizer, TEACHER_FORCING_RATIO)
         epoch_loss += loss
       print(f"\ttrain loss: {epoch_loss:.2f}")
       correct, total = 0, 0
       dev_epoch_loss = 0
-      for n in range(NUM_DEV_BATCHES):
+      print("DEV")
+      for n in tqdm(range(num_dev_batches)):
         (in_char_tensors, in_mask), (out_char_tensors, out_mask), tag_tensors = data_loader.sample_batch(dev_keys, dev_freq_dist, lines, lemma_to_lines, BATCH_SIZE)
         dev_loss, decoder_outputs = neuro.test_on_batch(in_char_tensors, in_mask, out_char_tensors, out_mask, tag_tensors)
         batch_correct, batch_total = accuracy(data_loader, out_char_tensors, decoder_outputs)
@@ -143,21 +167,21 @@ if __name__ == "__main__":
       acc = correct/total * 100
       if acc > last_acc:
           last_acc = acc
-          if not DRY_RUN:
-              torch.save(encoder.state_dict(), "pl_encoder.mdl")
-              torch.save(decoder.state_dict(), "pl_decoder.mdl")
+          if not dry_run or True:
+              torch.save(encoder.state_dict(), f"{lang}_encoder.mdl")
+              torch.save(decoder.state_dict(), f"{lang}_decoder.mdl")
       print(f"\tdev loss: {dev_epoch_loss:.2f}")
       print(f"\t dev accuracy: {acc:.2f}%")
 
-    if not DRY_RUN:
-        encoder.load_state_dict(torch.load("pl_encoder.mdl"))#
-        decoder.load_state_dict(torch.load("pl_decoder.mdl"))
+    if not dry_run or True:
+        encoder.load_state_dict(torch.load(f"{lang}_encoder.mdl"))#
+        decoder.load_state_dict(torch.load(f"{lang}_decoder.mdl"))
 
     correct, total = 0, 0
     test_epoch_loss = 0
     
-    print(len(test_keys), len(test_freq_dist))
-    for n in range(NUM_TEST_BATCHES):
+    print("TEST", len(test_keys), len(test_freq_dist))
+    for n in tqdm(range(num_test_batches)):
         (in_char_tensors, in_mask), (out_char_tensors, out_mask), tag_tensors = data_loader.sample_batch(test_keys, test_freq_dist, lines, lemma_to_lines, BATCH_SIZE)
         test_loss, decoder_outputs = neuro.test_on_batch(in_char_tensors, in_mask, out_char_tensors, out_mask, tag_tensors)
         batch_correct, batch_total = accuracy(data_loader, out_char_tensors, decoder_outputs)
@@ -168,3 +192,6 @@ if __name__ == "__main__":
     print(f"test loss: {test_epoch_loss:.2f}")
     print(f"test accuracy: {acc:.2f}%")
 
+
+if __name__ == "__main__":
+    main()
